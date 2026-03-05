@@ -17,6 +17,15 @@ export default function Stage1({ data, settings }) {
         {sentences.map((s, i) => (
           <tr key={i}>
             <td style={{fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:lh, padding:'6px 8px 0 8px', verticalAlign:'top'}}>
+              <span style={{
+                fontFamily:'var(--font-mono)',
+                fontSize: enSize * 0.75,
+                fontWeight: 800,
+                color: '#bbb',
+                marginRight: 5,
+                verticalAlign: 'middle',
+                userSelect: 'none',
+              }}>{i + 1}</span>
               {s.en}
             </td>
             <td style={{fontSize:koSize, padding:'6px 8px 0 8px', verticalAlign:'top'}}>
