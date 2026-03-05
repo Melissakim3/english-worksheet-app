@@ -1,5 +1,7 @@
-export default function Stage4({ data }) {
+export default function Stage4({ data, settings }) {
   const words = data?.words || []
+  const enSize = settings?.enSize ?? 11.5
+  const koSize = settings?.koSize ?? 10
 
   return (
     <table>
@@ -16,14 +18,14 @@ export default function Stage4({ data }) {
       <tbody>
         {words.map((w, i) => (
           <tr key={i}>
-            <td style={{color:'#bbb', fontSize:9.5, textAlign:'center'}}>{w.num}</td>
-            <td style={{fontWeight:700, fontFamily:'Georgia, serif', fontSize:12.5}}>{w.word}</td>
-            <td style={{fontSize:9, color:'#999', fontStyle:'italic'}}>{w.pos}</td>
-            <td style={{fontSize:11}}>{w.meaning}</td>
-            <td className="syn" style={{fontSize:11}}>
+            <td style={{color:'#bbb', fontSize:koSize*0.9, textAlign:'center'}}>{w.num}</td>
+            <td style={{fontWeight:700, fontFamily:'Georgia, serif', fontSize:enSize}}>{w.word}</td>
+            <td style={{fontSize:koSize*0.85, color:'#999', fontStyle:'italic'}}>{w.pos}</td>
+            <td style={{fontSize:koSize}}>{w.meaning}</td>
+            <td className="syn" style={{fontSize:koSize}}>
               {w.synonyms && w.synonyms !== '—' && <><span className="tag-s">S</span>{w.synonyms}</>}
             </td>
-            <td className="ant" style={{fontSize:11}}>
+            <td className="ant" style={{fontSize:koSize}}>
               {w.antonyms && w.antonyms !== '—' && <><span className="tag-a">A</span>{w.antonyms}</>}
               {w.antonyms === '—' && <span style={{color:'#ddd'}}>—</span>}
             </td>
