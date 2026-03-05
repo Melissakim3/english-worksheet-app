@@ -7,7 +7,6 @@ import {
 import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
 import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
 import { exportToWord } from './utils/exportWord.js'
-import { exportToWord } from './utils/exportDocx.js'
 
 import Stage1 from './components/Stage1.jsx'
 import Stage2 from './components/Stage2.jsx'
