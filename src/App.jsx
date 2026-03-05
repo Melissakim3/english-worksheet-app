@@ -6,6 +6,8 @@ import {
 } from './utils/prompts.js'
 import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
 import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
+import { exportToWord } from './utils/exportWord.js'
+import { exportToWord } from './utils/exportDocx.js'
 
 import Stage1 from './components/Stage1.jsx'
 import Stage2 from './components/Stage2.jsx'
@@ -62,8 +64,19 @@ export default function App() {
     setStageSettings(prev => ({ ...prev, [id]: newSettings }))
   }
 
+  const [wordLoading, setWordLoading] = useState(false)
   const printRef = useRef()
   const handlePrint = useReactToPrint({ content: () => printRef.current })
+
+  const handleWordExport = async () => {
+    setWordLoading(true)
+    try {
+      await exportToWord(results, passage)
+    } catch(e) {
+      alert('Word 파일 생성 오류: ' + e.message)
+    }
+    setWordLoading(false)
+  }
 
   const handleModelChange = (id) => { setModelId(id); saveModelId(id) }
 
@@ -98,11 +111,12 @@ export default function App() {
   const analyze = async () => {
     if (!passage.trim()) { setError('지문을 입력해주세요.'); return }
     const model = MODELS.find(m => m.id === modelId)
+    // 선택한 모델의 provider에 해당하는 키만 확인
     if (model?.provider === 'anthropic' && !import.meta.env.VITE_ANTHROPIC_API_KEY) {
-      setError('.env에 VITE_ANTHROPIC_API_KEY를 설정해주세요.'); return
+      setError('Anthropic API 키가 없습니다. GPT 모델을 선택하거나 Anthropic 키를 설정해주세요.'); return
     }
     if (model?.provider === 'openai' && !import.meta.env.VITE_OPENAI_API_KEY) {
-      setError('.env에 VITE_OPENAI_API_KEY를 설정해주세요.'); return
+      setError('OpenAI API 키가 없습니다. Claude 모델을 선택하거나 OpenAI 키를 설정해주세요.'); return
     }
 
     setError(''); setLoading(true); setProgress([]); setResults({})
@@ -202,6 +216,13 @@ export default function App() {
           <div className="worksheet-wrap">
             <div className="worksheet-toolbar no-print">
               <button className="print-btn" onClick={handlePrint}>인쇄 / PDF</button>
+              <button className="print-btn word-btn" onClick={handleWordExport} disabled={wordLoading}>
+                {wordLoading ? '⏳ Word 생성 중...' : '📄 Word 다운로드'}
+              </button>
+              <button className="print-btn" style={{background:'#2a5caa', borderColor:'#2a5caa'}}
+                onClick={() => exportToWord(results, passage, level)}>
+                ⬇ Word 다운로드
+              </button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set(STAGES.map(s=>s.id)))}>전체 펼치기</button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set())}>전체 접기</button>
             </div>
