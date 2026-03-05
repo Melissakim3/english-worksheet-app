@@ -218,10 +218,6 @@ export default function App() {
               <button className="print-btn word-btn" onClick={handleWordExport} disabled={wordLoading}>
                 {wordLoading ? '⏳ Word 생성 중...' : '📄 Word 다운로드'}
               </button>
-              <button className="print-btn" style={{background:'#2a5caa', borderColor:'#2a5caa'}}
-                onClick={() => exportToWord(results, passage, level)}>
-                ⬇ Word 다운로드
-              </button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set(STAGES.map(s=>s.id)))}>전체 펼치기</button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set())}>전체 접기</button>
             </div>
