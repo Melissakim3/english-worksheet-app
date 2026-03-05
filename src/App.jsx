@@ -5,9 +5,6 @@ import {
   analyzeStage6, analyzeStage7, analyzeStage8
 } from './utils/prompts.js'
 import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
-import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
-import { exportToWord } from './utils/exportWord.js'
-import { exportToWord } from './utils/exportDocx.js'
 
 import Stage1 from './components/Stage1.jsx'
 import Stage2 from './components/Stage2.jsx'
@@ -21,27 +18,15 @@ import AnswerKey from './components/AnswerKey.jsx'
 import ModelSelector from './components/ModelSelector.jsx'
 
 const STAGES = [
-  { id: 1, label: '문장 뜯어보기' },
-  { id: 2, label: '흐름 지도' },
+  { id: 1, label: '구조 분석표' },
+  { id: 2, label: '논리 흐름 색깔' },
   { id: 3, label: '4컷 만화' },
-  { id: 4, label: '내 단어장' },
-  { id: 5, label: '이 글의 핵심 3단어' },
-  { id: 6, label: '주제 한 문장' },
-  { id: 7, label: '실전 문제' },
-  { id: 8, label: '어법 총정리' },
+  { id: 4, label: '단어장' },
+  { id: 5, label: '핵심 키워드' },
+  { id: 6, label: '주제 분석' },
+  { id: 7, label: '수능형 문제' },
+  { id: 8, label: '어법 Final' },
 ]
-
-// 각 Stage 별 초기 settings 불러오기
-function loadStageSettings(id) {
-  try {
-    const saved = localStorage.getItem(`ws_stage_settings_${id}`)
-    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : loadSettings()
-  } catch { return loadSettings() }
-}
-
-function saveStageSettings(id, s) {
-  localStorage.setItem(`ws_stage_settings_${id}`, JSON.stringify(s))
-}
 
 export default function App() {
   const [passage, setPassage] = useState('')
@@ -54,31 +39,13 @@ export default function App() {
   const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8]))
   const [error, setError] = useState('')
 
-  // 각 Stage 개별 settings
-  const [stageSettings, setStageSettings] = useState(() =>
-    Object.fromEntries(STAGES.map(s => [s.id, loadStageSettings(s.id)]))
-  )
-
-  const updateStageSetting = (id, newSettings) => {
-    saveStageSettings(id, newSettings)
-    setStageSettings(prev => ({ ...prev, [id]: newSettings }))
-  }
-
-  const [wordLoading, setWordLoading] = useState(false)
   const printRef = useRef()
   const handlePrint = useReactToPrint({ content: () => printRef.current })
 
-  const handleWordExport = async () => {
-    setWordLoading(true)
-    try {
-      await exportToWord(results, passage)
-    } catch(e) {
-      alert('Word 파일 생성 오류: ' + e.message)
-    }
-    setWordLoading(false)
+  const handleModelChange = (id) => {
+    setModelId(id)
+    saveModelId(id)
   }
-
-  const handleModelChange = (id) => { setModelId(id); saveModelId(id) }
 
   const toggleStage = (id) => {
     setSelectedStages(prev => {
@@ -89,7 +56,11 @@ export default function App() {
   }
 
   const toggleAll = () => {
-    setSelectedStages(selectedStages.size === STAGES.length ? new Set() : new Set(STAGES.map(s => s.id)))
+    setSelectedStages(
+      selectedStages.size === STAGES.length
+        ? new Set()
+        : new Set(STAGES.map(s => s.id))
+    )
   }
 
   const toggleOpenStage = (id) => {
@@ -111,15 +82,20 @@ export default function App() {
   const analyze = async () => {
     if (!passage.trim()) { setError('지문을 입력해주세요.'); return }
     const model = MODELS.find(m => m.id === modelId)
-    // 선택한 모델의 provider에 해당하는 키만 확인
-    if (model?.provider === 'anthropic' && !import.meta.env.VITE_ANTHROPIC_API_KEY) {
-      setError('Anthropic API 키가 없습니다. GPT 모델을 선택하거나 Anthropic 키를 설정해주세요.'); return
+    const needsAnthropic = model?.provider === 'anthropic'
+    const needsOpenAI = model?.provider === 'openai'
+    if (needsAnthropic && !import.meta.env.VITE_ANTHROPIC_API_KEY) {
+      setError('.env에 VITE_ANTHROPIC_API_KEY를 설정해주세요.'); return
     }
-    if (model?.provider === 'openai' && !import.meta.env.VITE_OPENAI_API_KEY) {
-      setError('OpenAI API 키가 없습니다. Claude 모델을 선택하거나 OpenAI 키를 설정해주세요.'); return
+    if (needsOpenAI && !import.meta.env.VITE_OPENAI_API_KEY) {
+      setError('.env에 VITE_OPENAI_API_KEY를 설정해주세요.'); return
     }
 
-    setError(''); setLoading(true); setProgress([]); setResults({})
+    setError('')
+    setLoading(true)
+    setProgress([])
+    setResults({})
+
     const sorted = STAGES.filter(s => selectedStages.has(s.id))
     const newResults = {}
     let keywords = []
@@ -132,10 +108,14 @@ export default function App() {
         else if (stage.id === 2) data = await analyzeStage2(passage, level, modelId)
         else if (stage.id === 3) data = { placeholder: true }
         else if (stage.id === 4) data = await analyzeStage4(passage, level, modelId)
-        else if (stage.id === 5) { data = await analyzeStage5(passage, level, modelId); keywords = data.keywords || [] }
+        else if (stage.id === 5) {
+          data = await analyzeStage5(passage, level, modelId)
+          keywords = data.keywords || []
+        }
         else if (stage.id === 6) data = await analyzeStage6(passage, keywords, level, modelId)
         else if (stage.id === 7) data = await analyzeStage7(passage, level, modelId)
         else if (stage.id === 8) data = await analyzeStage8(passage, level, modelId)
+
         newResults[stage.id] = data
         setResults({ ...newResults })
         setStageProgress(stage.id, 'done')
@@ -159,20 +139,30 @@ export default function App() {
       </div>
 
       <div className="main-content">
+
+        {/* ── 모델 선택 ── */}
         <ModelSelector selectedId={modelId} onChange={handleModelChange} />
 
+        {/* ── 지문 입력 ── */}
         <div className="input-section no-print">
           <h2>지문 입력</h2>
-          <textarea className="passage-input" placeholder="분석할 영어 지문을 붙여넣으세요..."
-            value={passage} onChange={e => setPassage(e.target.value)} />
+          <textarea
+            className="passage-input"
+            placeholder="분석할 영어 지문을 붙여넣으세요..."
+            value={passage}
+            onChange={e => setPassage(e.target.value)}
+          />
           <div className="input-row">
             <select className="level-select" value={level} onChange={e => setLevel(e.target.value)}>
-              <option>고1</option><option>고2</option><option>고3</option>
+              <option>고1</option>
+              <option>고2</option>
+              <option>고3</option>
             </select>
-            {error && <span style={{color:'#c00', fontSize:11}}>{error}</span>}
+            {error && <span style={{ color: '#c00', fontSize: 11 }}>{error}</span>}
           </div>
         </div>
 
+        {/* ── Stage 선택 ── */}
         <div className="stage-selector no-print">
           <div className="stage-selector-header">
             <h2>Stage 선택</h2>
@@ -182,7 +172,11 @@ export default function App() {
           </div>
           <div className="stage-chips">
             {STAGES.map(s => (
-              <div key={s.id} className={`stage-chip ${selectedStages.has(s.id) ? 'active' : 'inactive'}`} onClick={() => toggleStage(s.id)}>
+              <div
+                key={s.id}
+                className={`stage-chip ${selectedStages.has(s.id) ? 'active' : 'inactive'}`}
+                onClick={() => toggleStage(s.id)}
+              >
                 <span className="chip-num">{String(s.id).padStart(2,'0')}</span>
                 {s.label}
                 {s.id === 3 && <span style={{fontSize:9,opacity:0.5}}> (준비중)</span>}
@@ -191,10 +185,16 @@ export default function App() {
           </div>
         </div>
 
-        <button className="analyze-btn no-print" onClick={analyze} disabled={loading || selectedStages.size === 0}>
+        {/* ── 분석 버튼 ── */}
+        <button
+          className="analyze-btn no-print"
+          onClick={analyze}
+          disabled={loading || selectedStages.size === 0}
+        >
           {loading ? '분석 중...' : `분석 시작 → (${currentModel.label})`}
         </button>
 
+        {/* ── 진행 상황 ── */}
         {progress.length > 0 && (
           <div className="progress-wrap no-print">
             <div className="progress-title">진행 상황</div>
@@ -204,7 +204,12 @@ export default function App() {
                 return (
                   <div key={p.id} className={`progress-step ${p.status}`}>
                     <div className="step-dot" />
-                    <span>{stage?.label}{p.status === 'active' && ' 분석 중...'}{p.status === 'done' && ' ✓'}{p.status === 'error' && ' ✗ 오류'}</span>
+                    <span>
+                      Stage {p.id} — {stage?.label}
+                      {p.status === 'active' && ' 분석 중...'}
+                      {p.status === 'done' && ' ✓'}
+                      {p.status === 'error' && ' ✗ 오류'}
+                    </span>
                   </div>
                 )
               })}
@@ -212,17 +217,11 @@ export default function App() {
           </div>
         )}
 
+        {/* ── 워크시트 ── */}
         {hasResults && (
           <div className="worksheet-wrap">
             <div className="worksheet-toolbar no-print">
               <button className="print-btn" onClick={handlePrint}>인쇄 / PDF</button>
-              <button className="print-btn word-btn" onClick={handleWordExport} disabled={wordLoading}>
-                {wordLoading ? '⏳ Word 생성 중...' : '📄 Word 다운로드'}
-              </button>
-              <button className="print-btn" style={{background:'#2a5caa', borderColor:'#2a5caa'}}
-                onClick={() => exportToWord(results, passage, level)}>
-                ⬇ Word 다운로드
-              </button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set(STAGES.map(s=>s.id)))}>전체 펼치기</button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set())}>전체 접기</button>
             </div>
@@ -235,8 +234,6 @@ export default function App() {
                   passage={passage}
                   isOpen={openStages.has(s.id)}
                   onToggle={() => toggleOpenStage(s.id)}
-                  settings={stageSettings[s.id]}
-                  onSettingsChange={(ns) => updateStageSetting(s.id, ns)}
                 />
               ))}
               <AnswerKey results={results} selectedStages={selectedStages} />
@@ -248,10 +245,9 @@ export default function App() {
   )
 }
 
-function StageBlock({ stage, data, passage, isOpen, onToggle, settings, onSettingsChange }) {
+function StageBlock({ stage, data, passage, isOpen, onToggle }) {
   const components = { 1:Stage1, 2:Stage2, 3:Stage3, 4:Stage4, 5:Stage5, 6:Stage6, 7:Stage7, 8:Stage8 }
   const Component = components[stage.id]
-
   return (
     <div className="stage-block">
       <div className="stage-block-header" onClick={onToggle}>
@@ -260,15 +256,12 @@ function StageBlock({ stage, data, passage, isOpen, onToggle, settings, onSettin
         <span className="stage-toggle no-print">{isOpen ? '▲' : '▼'}</span>
       </div>
       {isOpen && (
-        <>
-          <PrintControls settings={settings} onChange={onSettingsChange} />
-          <div className="stage-block-content">
-            {data.error
-              ? <p style={{color:'#c00', fontSize:11}}>오류: {data.error}</p>
-              : <Component data={data} passage={passage} settings={settings} />
-            }
-          </div>
-        </>
+        <div className="stage-block-content">
+          {data.error
+            ? <p style={{color:'#c00',fontSize:11}}>오류: {data.error}</p>
+            : <Component data={data} passage={passage} />
+          }
+        </div>
       )}
     </div>
   )

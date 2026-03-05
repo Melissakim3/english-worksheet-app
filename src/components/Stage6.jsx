@@ -1,7 +1,5 @@
-export default function Stage6({ data, settings }) {
+export default function Stage6({ data }) {
   const sentences = data?.topicSentences || []
-  const enSize = settings?.enSize ?? 11.5
-  const koSize = settings?.koSize ?? 10
 
   return (
     <table>
@@ -16,10 +14,14 @@ export default function Stage6({ data, settings }) {
       <tbody>
         {sentences.map((s, i) => (
           <tr key={i}>
-            <td><span className={`kw-inline ${s.kwClass}-color`} style={{fontSize:enSize}}>{s.keyword}</span></td>
-            <td><span className={`type-badge ${s.typeBadge}`}>{s.type}</span></td>
-            <td style={{fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:1.7}}>{s.en}</td>
-            <td style={{fontSize:koSize, lineHeight:1.7, color:'#555'}}>{s.ko}</td>
+            <td>
+              <span className={`kw-inline ${s.kwClass}-color`}>{s.keyword}</span>
+            </td>
+            <td>
+              <span className={`type-badge ${s.typeBadge}`}>{s.type}</span>
+            </td>
+            <td className="en-text">{s.en}</td>
+            <td className="ko-text">{s.ko}</td>
           </tr>
         ))}
       </tbody>
