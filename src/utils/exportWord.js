@@ -1,5 +1,5 @@
-// 브라우저에서 직접 .docx 생성 (docx 라이브러리 CDN 버전)
-// CDN: https://unpkg.com/docx@8.5.0/build/index.js
+import * as docx from 'docx'
+import { saveAs } from 'file-saver'
 
 const COLORS = {
   h1: 'FFE066',
@@ -398,9 +398,6 @@ function buildAnswerKey(results, docx) {
 
 // ── 메인 export 함수 ──────────────────────────────────
 export async function exportToWord(results, passage) {
-  // docx 라이브러리를 동적으로 로드
-  const docx = await import('https://unpkg.com/docx@8.5.0/build/index.js')
-
   const allChildren = [
     // 표지
     new docx.Paragraph({
@@ -437,11 +434,7 @@ export async function exportToWord(results, passage) {
     }]
   })
 
-  const buffer = await docx.Packer.toBlob(doc)
-  const url = URL.createObjectURL(buffer)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `worksheet_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.docx`
-  a.click()
-  URL.revokeObjectURL(url)
+  const blob = await docx.Packer.toBlob(doc)
+  const filename = `worksheet_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.docx`
+  saveAs(blob, filename)
 }
