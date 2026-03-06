@@ -128,7 +128,7 @@ export default function App() {
       setError('OpenAI API 키가 없습니다. Claude 모델을 선택하거나 OpenAI 키를 설정해주세요.'); return
     }
 
-    setError(''); setLoading(true); setProgress([]); setResults({})
+    setError(''); setLoading(true); setProgress([]); setResults({}); setMultiResults([])
     const sorted = STAGES.filter(s => selectedStages.has(s.id))
     const newResults = {}
     let keywords = []
@@ -385,7 +385,64 @@ export default function App() {
           </div>
         )}
 
-        {hasResults && (
+        {/* 다중 지문 결과 */}
+        {multiMode && multiResults.length > 0 && (
+          <div className="worksheet-wrap">
+            {/* 전체 다운로드 버튼 */}
+            <div className="worksheet-toolbar no-print">
+              <span style={{fontWeight:700, fontSize:13}}>
+                📚 {multiResults.length}개 지문 분석 완료
+                {multiResults.length < multiPassages.length && ` (${multiPassages.length - multiResults.length}개 분석 중...)`}
+              </span>
+              <button className="print-btn word-btn"
+                onClick={async () => {
+                  for (let i = 0; i < multiResults.length; i++) {
+                    await downloadWordForPassage(multiPassages[i], multiResults[i].results, i)
+                    await new Promise(r => setTimeout(r, 800))
+                  }
+                }}
+                disabled={wordDownloading !== null}>
+                {wordDownloading !== null ? `⏳ Word 생성 중 (${wordDownloading + 1}/${multiResults.length})...` : `📄 전체 Word 다운로드 (${multiResults.length}개)`}
+              </button>
+            </div>
+
+            {/* 지문별 결과 */}
+            {multiResults.map((mr, pi) => (
+              <div key={pi} style={{marginBottom:32, borderTop: pi > 0 ? '3px solid #1a1a1a' : 'none', paddingTop: pi > 0 ? 24 : 0}}>
+                <div className="no-print" style={{display:'flex', alignItems:'center', gap:12, marginBottom:12,
+                  padding:'8px 14px', background:'#f5f2ed', borderRadius:3}}>
+                  <span style={{background:'#1a1a1a', color:'#fff', fontWeight:800, fontSize:12,
+                    padding:'2px 10px', borderRadius:2}}>지문 {pi + 1}</span>
+                  <span style={{fontSize:12, color:'#666', flex:1}}>{mr.passage.slice(0, 60)}...</span>
+                  <button onClick={() => downloadWordForPassage(mr.passage, mr.results, pi)}
+                    disabled={wordDownloading === pi}
+                    style={{padding:'4px 12px', background:'#2b579a', color:'#fff', border:'none',
+                      borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:700}}>
+                    {wordDownloading === pi ? '⏳' : '📄 Word'}
+                  </button>
+                </div>
+                <div ref={pi === 0 ? printRef : null}>
+                  {STAGES.filter(s => mr.results[s.id]).map(s => (
+                    <StageBlock
+                      key={s.id}
+                      stage={s}
+                      data={mr.results[s.id]}
+                      passage={mr.passage}
+                      isOpen={openStages.has(s.id)}
+                      onToggle={() => toggleOpenStage(s.id)}
+                      settings={stageSettings[s.id]}
+                      onSettingsChange={(ns) => updateStageSetting(s.id, ns)}
+                    />
+                  ))}
+                  <AnswerKey results={mr.results} selectedStages={selectedStages} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 단일 지문 결과 */}
+        {multiResults.length === 0 && hasResults && (
           <div className="worksheet-wrap">
             <div className="worksheet-toolbar no-print">
               <button className="print-btn" onClick={handlePrint}>인쇄 / PDF</button>
