@@ -282,17 +282,7 @@ export default function App() {
           ) : (
             <div>
               <textarea className="passage-input"
-                placeholder={"여러 지문을 붙여넣을 때는 지문 사이에 --- 를 넣어주세요.
-
-지문1...
-
----
-
-지문2...
-
----
-
-지문3..."}
+                placeholder="여러 지문을 붙여넣을 때는 지문 사이에 --- 를 넣어주세요. 예) 지문1... --- 지문2... --- 지문3..."
                 value={passage} onChange={e => setPassage(e.target.value)} />
               <div style={{display:'flex', gap:8, marginTop:8, flexWrap:'wrap'}}>
                 <button onClick={handleMultiPaste}
