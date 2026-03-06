@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import {
   analyzeStage1, analyzeStage2, analyzeStage4, analyzeStage5,
-  analyzeStage6, analyzeStage7, analyzeStage8
+  analyzeStage6, analyzeStage7, analyzeStage8, analyzeStage9
 } from './utils/prompts.js'
 import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
 import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
@@ -16,6 +16,7 @@ import Stage5 from './components/Stage5.jsx'
 import Stage6 from './components/Stage6.jsx'
 import Stage7 from './components/Stage7.jsx'
 import Stage8 from './components/Stage8.jsx'
+import Stage9 from './components/Stage9.jsx'
 import AnswerKey from './components/AnswerKey.jsx'
 import ModelSelector from './components/ModelSelector.jsx'
 
@@ -28,6 +29,7 @@ const STAGES = [
   { id: 6, label: '주제 한 문장' },
   { id: 7, label: '실전 문제' },
   { id: 8, label: '어법 총정리' },
+  { id: 9, label: '서술형 문제' },
 ]
 
 // 각 Stage 별 초기 settings 불러오기
@@ -46,11 +48,12 @@ export default function App() {
   const [passage, setPassage] = useState('')
   const [level, setLevel] = useState('고2')
   const [modelId, setModelId] = useState(getSavedModelId())
-  const [selectedStages, setSelectedStages] = useState(new Set([1,2,3,4,5,6,7,8]))
+  const [selectedStages, setSelectedStages] = useState(new Set([1,2,3,4,5,6,7,8,9]))
   const [loading, setLoading] = useState(false)
+  const [difficulty, setDifficulty] = useState('중')
   const [progress, setProgress] = useState([])
   const [results, setResults] = useState({})
-  const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8]))
+  const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8,9]))
   const [error, setError] = useState('')
 
   // 각 Stage 개별 settings
@@ -135,6 +138,7 @@ export default function App() {
         else if (stage.id === 6) data = await analyzeStage6(passage, keywords, level, modelId)
         else if (stage.id === 7) data = await analyzeStage7(passage, level, modelId)
         else if (stage.id === 8) data = await analyzeStage8(passage, level, modelId)
+        else if (stage.id === 9) data = await analyzeStage9(passage, level, difficulty, modelId)
         newResults[stage.id] = data
         setResults({ ...newResults })
         setStageProgress(stage.id, 'done')
@@ -167,6 +171,11 @@ export default function App() {
           <div className="input-row">
             <select className="level-select" value={level} onChange={e => setLevel(e.target.value)}>
               <option>고1</option><option>고2</option><option>고3</option>
+            </select>
+            <select className="level-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}
+              title="서술형 난이도">
+              <option value="중">서술형 중</option>
+              <option value="상">서술형 상</option>
             </select>
             {error && <span style={{color:'#c00', fontSize:11}}>{error}</span>}
           </div>
@@ -244,7 +253,7 @@ export default function App() {
 }
 
 function StageBlock({ stage, data, passage, isOpen, onToggle, settings, onSettingsChange }) {
-  const components = { 1:Stage1, 2:Stage2, 3:Stage3, 4:Stage4, 5:Stage5, 6:Stage6, 7:Stage7, 8:Stage8 }
+  const components = { 1:Stage1, 2:Stage2, 3:Stage3, 4:Stage4, 5:Stage5, 6:Stage6, 7:Stage7, 8:Stage8, 9:Stage9 }
   const Component = components[stage.id]
 
   return (
