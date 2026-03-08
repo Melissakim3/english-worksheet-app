@@ -8,7 +8,6 @@ import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
 import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
 import { exportToWord } from './utils/exportWord.js'
 import { extractTextFromPDF, splitPassagesWithAI, splitByDivider } from './utils/pdfExtract.js'
-import { uploadToNotion } from './utils/notionUpload.js'
 
 import Stage1 from './components/Stage1.jsx'
 import Stage2 from './components/Stage2.jsx'
@@ -59,10 +58,6 @@ export default function App() {
   const [currentPassageIdx, setCurrentPassageIdx] = useState(0)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [wordDownloading, setWordDownloading] = useState(null)
-  const [worksheetTitle, setWorksheetTitle] = useState('')
-  const [notionLoading, setNotionLoading] = useState(false)
-  const [notionUrls, setNotionUrls] = useState(null)
-  const [dragOver, setDragOver] = useState(false)
   const [progress, setProgress] = useState([])
   const [results, setResults] = useState({})
   const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8,9]))
@@ -85,7 +80,7 @@ export default function App() {
   const handleWordExport = async () => {
     setWordLoading(true)
     try {
-      await exportToWord(results, passage, title)
+      await exportToWord(results, passage)
     } catch(e) {
       alert('Word 파일 생성 오류: ' + e.message)
     }
@@ -133,7 +128,7 @@ export default function App() {
       setError('OpenAI API 키가 없습니다. Claude 모델을 선택하거나 OpenAI 키를 설정해주세요.'); return
     }
 
-    setError(''); setLoading(true); setProgress([]); setResults({}); setMultiResults([])
+    setError(''); setLoading(true); setProgress([]); setResults({})
     const sorted = STAGES.filter(s => selectedStages.has(s.id))
     const newResults = {}
     let keywords = []
@@ -246,25 +241,11 @@ export default function App() {
   const downloadWordForPassage = async (psg, res, idx) => {
     setWordDownloading(idx)
     try {
-      await exportToWord(res, psg, title || `지문${idx+1}`)
+      await exportToWord(res, psg)
     } catch (e) {
       setError('Word 생성 오류: ' + e.message)
     }
     setWordDownloading(null)
-  }
-
-  const handleNotionUpload = async (psg, res, titleOverride) => {
-    const t = titleOverride || worksheetTitle.trim() || `영어 워크시트 ${new Date().toLocaleDateString('ko-KR')}`
-    setNotionLoading(true)
-    setNotionUrls(null)
-    try {
-      const stagesWithResults = STAGES.filter(s => res[s.id])
-      const urls = await uploadToNotion(t, psg, res, stagesWithResults)
-      setNotionUrls(urls)
-    } catch(e) {
-      alert('노션 업로드 오류: ' + e.message)
-    }
-    setNotionLoading(false)
   }
 
   const currentModel = MODELS.find(m => m.id === modelId) || MODELS[0]
@@ -282,21 +263,6 @@ export default function App() {
 
         <div className="input-section no-print">
           <h2>지문 입력</h2>
-          <input
-            className="passage-input"
-            style={{height:'auto', padding:'8px 12px', marginBottom:8, fontSize:13, fontWeight:600}}
-            placeholder="📌 자료 제목 입력 (파일명 + 노션 저장에 사용)"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="워크시트 제목을 입력하세요 (예: 고2 2024 수능 23번)"
-            value={worksheetTitle}
-            onChange={e => setWorksheetTitle(e.target.value)}
-            style={{width:'100%', padding:'8px 12px', border:'1.5px solid #ddd', borderRadius:3,
-              fontSize:13, fontFamily:'var(--font-sans)', marginBottom:10, boxSizing:'border-box'}}
-          />
 
           {/* 탭: 단일 / 여러 지문 */}
           <div style={{display:'flex', gap:8, marginBottom:10}}>
@@ -419,90 +385,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 다중 지문 결과 */}
-        {multiMode && multiResults.length > 0 && (
-          <div className="worksheet-wrap">
-            {/* 전체 다운로드 버튼 */}
-            <div className="worksheet-toolbar no-print">
-              <span style={{fontWeight:700, fontSize:13}}>
-                📚 {multiResults.length}개 지문 분석 완료
-                {multiResults.length < multiPassages.length && ` (${multiPassages.length - multiResults.length}개 분석 중...)`}
-              </span>
-              <button className="print-btn word-btn"
-                onClick={async () => {
-                  for (let i = 0; i < multiResults.length; i++) {
-                    await downloadWordForPassage(multiPassages[i], multiResults[i].results, i)
-                    await new Promise(r => setTimeout(r, 800))
-                  }
-                }}
-                disabled={wordDownloading !== null}>
-                {wordDownloading !== null ? `⏳ Word 생성 중 (${wordDownloading + 1}/${multiResults.length})...` : `📄 전체 Word 다운로드 (${multiResults.length}개)`}
-              </button>
-              <button className="print-btn no-print"
-                style={{background: notionDone ? '#2ecc71' : '#000', color:'#fff', border:'none'}}
-                onClick={async () => {
-                  for (let i = 0; i < multiResults.length; i++) {
-                    const t = title ? `${title} - 지문${i+1}` : `지문 ${i+1}`
-                    await uploadToNotion(t, multiPassages[i], multiResults[i].results, selectedStages)
-                  }
-                  setNotionDone(true)
-                  setTimeout(() => setNotionDone(false), 3000)
-                }}
-                disabled={notionLoading}>
-                {notionDone ? '✅ 노션 저장 완료!' : notionLoading ? '⏳ 저장 중...' : `🗒️ 전체 노션 저장 (${multiResults.length}개)`}
-              </button>
-              <button className="print-btn no-print"
-                onClick={async () => {
-                  for (let i = 0; i < multiResults.length; i++) {
-                    await handleNotionUpload(
-                      `${worksheetTitle || '워크시트'} - 지문 ${i+1}`,
-                      multiResults[i].passage, multiResults[i].results
-                    )
-                  }
-                }}
-                disabled={notionLoading}
-                style={{background:'#000', color:'#fff', border:'none'}}>
-                {notionLoading ? '⏳ 노션 업로드 중...' : `🔗 전체 노션 저장 (${multiResults.length}개)`}
-              </button>
-            </div>
-
-            {/* 지문별 결과 */}
-            {multiResults.map((mr, pi) => (
-              <div key={pi} style={{marginBottom:32, borderTop: pi > 0 ? '3px solid #1a1a1a' : 'none', paddingTop: pi > 0 ? 24 : 0}}>
-                <div className="no-print" style={{display:'flex', alignItems:'center', gap:12, marginBottom:12,
-                  padding:'8px 14px', background:'#f5f2ed', borderRadius:3}}>
-                  <span style={{background:'#1a1a1a', color:'#fff', fontWeight:800, fontSize:12,
-                    padding:'2px 10px', borderRadius:2}}>지문 {pi + 1}</span>
-                  <span style={{fontSize:12, color:'#666', flex:1}}>{mr.passage.slice(0, 60)}...</span>
-                  <button onClick={() => downloadWordForPassage(mr.passage, mr.results, pi)}
-                    disabled={wordDownloading === pi}
-                    style={{padding:'4px 12px', background:'#2b579a', color:'#fff', border:'none',
-                      borderRadius:2, cursor:'pointer', fontSize:12, fontWeight:700}}>
-                    {wordDownloading === pi ? '⏳' : '📄 Word'}
-                  </button>
-                </div>
-                <div ref={pi === 0 ? printRef : null}>
-                  {STAGES.filter(s => mr.results[s.id]).map(s => (
-                    <StageBlock
-                      key={s.id}
-                      stage={s}
-                      data={mr.results[s.id]}
-                      passage={mr.passage}
-                      isOpen={openStages.has(s.id)}
-                      onToggle={() => toggleOpenStage(s.id)}
-                      settings={stageSettings[s.id]}
-                      onSettingsChange={(ns) => updateStageSetting(s.id, ns)}
-                    />
-                  ))}
-                  <AnswerKey results={mr.results} selectedStages={selectedStages} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 단일 지문 결과 */}
-        {multiResults.length === 0 && hasResults && (
+        {hasResults && (
           <div className="worksheet-wrap">
             <div className="worksheet-toolbar no-print">
               <button className="print-btn" onClick={handlePrint}>인쇄 / PDF</button>
@@ -511,23 +394,6 @@ export default function App() {
               </button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set(STAGES.map(s=>s.id)))}>전체 펼치기</button>
               <button className="print-btn outline" onClick={() => setOpenStages(new Set())}>전체 접기</button>
-              <button className="print-btn no-print"
-                style={{background: notionDone ? '#2ecc71' : '#000', color:'#fff', border:'none'}}
-                onClick={() => handleNotionUpload()} disabled={notionLoading}>
-                {notionDone ? '✅ 노션 저장 완료!' : notionLoading ? '⏳ 노션 저장 중...' : '🗒️ 노션에 저장'}
-              </button>
-              <button className="print-btn no-print"
-                onClick={() => handleNotionUpload(passage, results)}
-                disabled={notionLoading}
-                style={{background:'#000', color:'#fff', border:'none'}}>
-                {notionLoading ? '⏳ 노션 업로드 중...' : '🔗 노션에 저장'}
-              </button>
-              {notionUrls && (
-                <span style={{fontSize:11}}>
-                  {notionUrls.questionUrl && <a href={notionUrls.questionUrl} target="_blank" rel="noreferrer" style={{color:'#2b579a', marginRight:8}}>📄 문제 →</a>}
-                  {notionUrls.answerUrl && <a href={notionUrls.answerUrl} target="_blank" rel="noreferrer" style={{color:'#c00000'}}>🔑 정답 →</a>}
-                </span>
-              )}
             </div>
             <div ref={printRef}>
               {STAGES.filter(s => results[s.id]).map(s => (
