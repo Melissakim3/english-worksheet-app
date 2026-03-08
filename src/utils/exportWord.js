@@ -1,7 +1,7 @@
 // Word 다운로드 — docx 라이브러리 없이 순수 HTML → .doc 방식
 // (Word에서 열 수 있는 HTML 파일로 저장)
 
-export async function exportToWord(results, passage) {
+export async function exportToWord(results, passage, title = "") {
   const rows1 = buildStage1(results[1])
   const rows4 = buildStage4(results[4])
   const kw5   = buildStage5(results[5])
@@ -52,7 +52,7 @@ ${ans}
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `worksheet_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.doc`
+  a.download = `${title || 'worksheet'}_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.doc`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
