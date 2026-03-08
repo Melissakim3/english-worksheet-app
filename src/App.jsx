@@ -9,7 +9,6 @@ import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/Prin
 import { exportToWord } from './utils/exportWord.js'
 import { extractTextFromPDF, splitPassagesWithAI, splitByDivider } from './utils/pdfExtract.js'
 import { uploadToNotion } from './utils/notionUpload.js'
-import { uploadToNotion } from './utils/notionUpload.js'
 
 import Stage1 from './components/Stage1.jsx'
 import Stage2 from './components/Stage2.jsx'
@@ -60,12 +59,10 @@ export default function App() {
   const [currentPassageIdx, setCurrentPassageIdx] = useState(0)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [wordDownloading, setWordDownloading] = useState(null)
-  const [title, setTitle] = useState('')
-  const [notionLoading, setNotionLoading] = useState(false)
-  const [notionDone, setNotionDone] = useState(false)
   const [worksheetTitle, setWorksheetTitle] = useState('')
   const [notionLoading, setNotionLoading] = useState(false)
-  const [notionUrl, setNotionUrl] = useState('')
+  const [notionUrls, setNotionUrls] = useState(null)
+  const [dragOver, setDragOver] = useState(false)
   const [progress, setProgress] = useState([])
   const [results, setResults] = useState({})
   const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8,9]))
@@ -256,32 +253,16 @@ export default function App() {
     setWordDownloading(null)
   }
 
-  const handleNotionUpload = async (psg, res) => {
-    const title = worksheetTitle.trim() || `영어 워크시트 ${new Date().toLocaleDateString('ko-KR')}`
+  const handleNotionUpload = async (psg, res, titleOverride) => {
+    const t = titleOverride || worksheetTitle.trim() || `영어 워크시트 ${new Date().toLocaleDateString('ko-KR')}`
     setNotionLoading(true)
-    setNotionUrl('')
+    setNotionUrls(null)
     try {
       const stagesWithResults = STAGES.filter(s => res[s.id])
-      const url = await uploadToNotion(title, psg, res, stagesWithResults)
-      setNotionUrl(url || '')
-      if (url) alert('노션 업로드 완료! 링크가 복사됩니다.')
-      else alert('노션 업로드 완료!')
+      const urls = await uploadToNotion(t, psg, res, stagesWithResults)
+      setNotionUrls(urls)
     } catch(e) {
       alert('노션 업로드 오류: ' + e.message)
-    }
-    setNotionLoading(false)
-  }
-
-  const handleNotionUpload = async (psg, res) => {
-    if (!title.trim()) { setError('제목을 먼저 입력해주세요.'); return }
-    setNotionLoading(true)
-    setNotionDone(false)
-    try {
-      await uploadToNotion(title, psg || passage, res || results, selectedStages)
-      setNotionDone(true)
-      setTimeout(() => setNotionDone(false), 3000)
-    } catch(e) {
-      setError('노션 업로드 오류: ' + e.message)
     }
     setNotionLoading(false)
   }
@@ -541,8 +522,12 @@ export default function App() {
                 style={{background:'#000', color:'#fff', border:'none'}}>
                 {notionLoading ? '⏳ 노션 업로드 중...' : '🔗 노션에 저장'}
               </button>
-              {notionUrl && <a href={notionUrl} target="_blank" rel="noreferrer"
-                style={{fontSize:11, color:'#2b579a'}}>노션에서 열기 →</a>}
+              {notionUrls && (
+                <span style={{fontSize:11}}>
+                  {notionUrls.questionUrl && <a href={notionUrls.questionUrl} target="_blank" rel="noreferrer" style={{color:'#2b579a', marginRight:8}}>📄 문제 →</a>}
+                  {notionUrls.answerUrl && <a href={notionUrls.answerUrl} target="_blank" rel="noreferrer" style={{color:'#c00000'}}>🔑 정답 →</a>}
+                </span>
+              )}
             </div>
             <div ref={printRef}>
               {STAGES.filter(s => results[s.id]).map(s => (
