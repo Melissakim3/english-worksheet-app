@@ -49,7 +49,17 @@ JSON 형식:
 규칙: 등장 순서, 구동사 포함, 최소 12개, 쉬운 단어 제외.
 `, modelId)
 }
-
+export async function analyzeStage5(passage, level, modelId) {
+  return callAI(SYSTEM_BASE, `
+다음 지문에서 핵심 키워드 3개를 추출하고 분석해주세요.
+난이도: ${level} / 지문: """${passage}"""
+JSON 형식:
+{
+  "keywords": [{"word":"키워드(단일단어)","ko":"한글뜻","role":"지문 논리에서의 역할(1문장)"}],
+  "flowSummary": "세 키워드 논리 흐름(1~2문장)"
+}
+`, modelId)
+}
 export async function analyzeStage6(passage, keywords, level, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 지문의 핵심 주제를 4가지 다른 방식으로 표현해주세요.
