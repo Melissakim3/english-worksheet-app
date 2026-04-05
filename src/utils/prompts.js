@@ -15,6 +15,12 @@ JSON 형식:
   ]
 }
 규칙: 관계대명사절/대시/동격어구는 앞 문장과 같은 칸. synonyms는 핵심 단어 1~2개만.
+번역 규칙:
+- 관용어구·숙어는 직역 금지, 한국어에서 굳어진 표현으로 번역할 것
+  (예: family leave → 육아휴직, on maternity leave → 출산휴가 중,
+       come to terms with → 받아들이다, break the ice → 어색함을 깨다)
+- 번역은 수능 교재·교육 현장에서 실제 쓰이는 표현 기준으로 작성할 것
+- 단어 뜻이 아닌 문맥상 자연스러운 한국어로 번역할 것
 `, modelId)
 }
 
@@ -44,31 +50,27 @@ JSON 형식:
 `, modelId)
 }
 
-export async function analyzeStage5(passage, level, modelId) {
+export async function analyzeStage6(passage, keywords, level, modelId) {
   return callAI(SYSTEM_BASE, `
-다음 지문에서 핵심 키워드 3개를 추출하고 분석해주세요.
+다음 지문의 핵심 주제를 4가지 다른 방식으로 표현해주세요.
+같은 주제를 다양한 문장 구조로 표현하는 법을 학생들에게 보여주는 것이 목적입니다.
 난이도: ${level} / 지문: """${passage}"""
 JSON 형식:
 {
-  "keywords": [{"word":"키워드(단일단어)","ko":"한글뜻","role":"지문 논리에서의 역할(1문장)"}],
-  "flowSummary": "세 키워드 논리 흐름(1~2문장)"
-}
-`, modelId)
-}
-
-export async function analyzeStage6(passage, keywords, level, modelId) {
-  return callAI(SYSTEM_BASE, `
-다음 지문과 핵심 키워드 3개로 주제 표현 3개를 만들어주세요.
-난이도: ${level} / 지문: """${passage}""" / 키워드: ${keywords.map(k => k.word).join(', ')}
-JSON 형식:
-{
   "topicSentences": [
-    {"keyword":"키워드","kwClass":"kw1","type":"반대형","typeBadge":"type-counter","en":"영어문장","ko":"한글해석"},
-    {"keyword":"키워드","kwClass":"kw2","type":"빈칸형","typeBadge":"type-blank","en":"영어문장(___ 포함)","ko":"한글해석"},
-    {"keyword":"키워드","kwClass":"kw3","type":"요약형","typeBadge":"type-summary","en":"영어문장","ko":"한글해석"}
-  ]
+    {"type":"직접형","typeBadge":"type-direct","en":"주제를 핵심 단어 그대로 직접 서술한 문장","ko":"한글 해석","tip":"수능에서 가장 자주 출제되는 주제문 형태"},
+    {"type":"반대형","typeBadge":"type-counter","en":"반의어로 대비 구조를 만들어 주제를 강조한 문장 (Without/Unless 등)","ko":"한글 해석","tip":"대비 구조로 주제를 강조하는 방법"},
+    {"type":"비유형","typeBadge":"type-metaphor","en":"상의어 또는 비유적 표현으로 주제를 표현한 문장 (Like/As/Just as 등)","ko":"한글 해석","tip":"비유로 주제를 기억에 남기는 방법"},
+    {"type":"요약형","typeBadge":"type-summary","en":"동의어 수준의 유사 표현으로 지문 전체를 한 문장으로 압축","ko":"한글 해석","tip":"글 전체의 핵심을 한 문장으로 정리하는 방법"}
+  ],
+  "teacherNote": "네 문장이 모두 같은 주제를 담고 있음을 한 줄로 설명"
 }
-규칙: 키워드 단어를 직접 쓰지 말고 동의어/반의어/상위어 사용.
+규칙:
+- 직접형은 지문의 핵심 단어를 그대로 사용할 것
+- 반대형은 반의어로 대비 구조를 만들 것
+- 비유형은 상의어 또는 비유적 표현 사용 가능, 단 학생이 주제를 바로 알아볼 수 있는 수준으로
+- 요약형은 동의어 수준의 유사 표현만 허용
+- 네 문장 모두 문장 구조와 어휘는 달라야 함
 `, modelId)
 }
 
