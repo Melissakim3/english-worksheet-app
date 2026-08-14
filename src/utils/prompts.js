@@ -103,7 +103,7 @@ JSON 형식:
 }
 
 // ─────────────────────────────────────────
-// Stage 7 : 실전 문제 → 요약문 + 빈칸 2~3개
+// Stage 7 : 실전 문제 → 요약문 + 빈칸 2~3개 (정답 단어 한글 뜻 포함)
 // ─────────────────────────────────────────
 export async function analyzeStage7(passage, level, modelId) {
   return callAI(SYSTEM_BASE, `
@@ -115,6 +115,7 @@ export async function analyzeStage7(passage, level, modelId) {
 2단계 - 완성된 summary 문장 "안에서만" 핵심 단어 2~3개를 골라 빈칸으로 치환
   ★ summary에 없는 단어를 정답으로 만드는 것 절대 금지 (반드시 summary 원문에서 그대로 추출)
   ★ 빈칸 정답은 summary 원문 단어와 철자까지 정확히 일치해야 함 (동의어로 바꾸지 말 것)
+  ★ 각 정답 단어의 한글 뜻(문맥에 맞는 뜻)도 함께 작성
 3단계 - 출력 전, blankedSummary의 빈칸을 answer로 다시 채웠을 때 summary와 완전히 같은 문장이 되는지 스스로 검증
 
 JSON 형식:
@@ -124,8 +125,8 @@ JSON 형식:
   "summary": "빈칸 없는 완성된 요약문 원문 (채점/검증용)",
   "blankedSummary": "빈칸 처리된 요약문 (___BLANK_A___, ___BLANK_B___ 형식)",
   "blanks": [
-    {"key":"A","answer":"정답단어(summary 원문과 철자 동일)"},
-    {"key":"B","answer":"정답단어(summary 원문과 철자 동일)"}
+    {"key":"A","answer":"정답단어(summary 원문과 철자 동일)","ko":"문맥에 맞는 한글 뜻"},
+    {"key":"B","answer":"정답단어(summary 원문과 철자 동일)","ko":"문맥에 맞는 한글 뜻"}
   ],
   "options": ["① (A)단어 — (B)단어","② (A)단어 — (B)단어","③ (A)단어 — (B)단어","④ (A)단어 — (B)단어","⑤ (A)단어 — (B)단어"],
   "answer": "②",
@@ -136,7 +137,7 @@ JSON 형식:
 }
 
 // ─────────────────────────────────────────
-// Stage 8 : 어법 총정리 → 어법·문맥어휘·철자혼동 선택형 10문항 (고등 수준, 빈칸 쓰기 없음)
+// Stage 8 : 어법 총정리 → 어법·문맥어휘·철자혼동 선택형 10문항 (고등 수준, 빈칸 쓰기 없음, 정답 단어 한글 뜻 포함)
 // ─────────────────────────────────────────
 export async function analyzeStage8(passage, level, modelId) {
   return callAI(SYSTEM_BASE, `
@@ -152,6 +153,7 @@ export async function analyzeStage8(passage, level, modelId) {
 3단계 - passage 필드에 지문 "전체"를 이어서 HTML로 작성하고, 10개 포인트 전부를 지문 안에서 (①선택지A / 선택지B) 형식으로 인라인 삽입
   ★ 모든 항목은 선택형으로만 만들 것 (빈칸 쓰기 방식 절대 사용 금지)
   ★ 오답 선택지는 실제로 헷갈릴 만큼 그럴듯해야 함 (너무 쉬운 오답 금지)
+  ★ 각 정답 단어의 한글 뜻(문맥에 맞는 뜻)도 함께 작성
 4단계 - 출력 전, passage 안의 번호와 items의 num이 1:1로 정확히 대응하는지, 각 정답이 문맥상 명확히 하나로 정해지는지 스스로 재확인
 
 JSON 형식:
@@ -159,9 +161,9 @@ JSON 형식:
   "type": "어법·어휘 10선",
   "passage": "지문 전체 HTML (①~⑩ 10개, 전부 (선택지A/선택지B) 형식으로 인라인 삽입)",
   "items": [
-    {"num":1,"type":"gram","label":"어법","choices":"선택지A / 선택지B","answer":"정답","note":"근거"},
-    {"num":2,"type":"context","label":"문맥어휘","choices":"단어A / 단어B","answer":"정답","note":"근거"},
-    {"num":3,"type":"spell","label":"철자혼동","choices":"단어A / 단어B","answer":"정답","note":"근거 (두 단어의 뜻 차이 설명)"}
+    {"num":1,"type":"gram","label":"어법","choices":"선택지A / 선택지B","answer":"정답","ko":"정답 단어의 한글 뜻","note":"근거"},
+    {"num":2,"type":"context","label":"문맥어휘","choices":"단어A / 단어B","answer":"정답","ko":"정답 단어의 한글 뜻","note":"근거"},
+    {"num":3,"type":"spell","label":"철자혼동","choices":"단어A / 단어B","answer":"정답","ko":"정답 단어의 한글 뜻","note":"근거 (두 단어의 뜻 차이 설명)"}
   ]
 }
 규칙: items는 정확히 10개, num은 1~10 순서대로. order·빈칸(쓰기) 유형 절대 사용 금지.
@@ -180,8 +182,9 @@ export async function analyzeStage9(passage, level, difficulty, modelId) {
 1단계 - 지문 문장들 중 서술형 출제 가치가 높은 문장 2개 선정 (8~16단어 권장)
   선정 기준: (1) 지문의 핵심 내용을 담고 있을 것 (2) 어법/구문 포인트를 포함할 것
   각 문장을 선정한 이유(reason)를 1줄로 작성
-2단계 - 선정한 문장을 의미 단위(어구)로 나누어 4~7개 조각으로 분리 (chunks)
-  ★ 한 단어씩 쪼개지 말고, 의미 있는 어구 단위로 나눌 것 (예: "designing a career path" / "requires preparation too")
+2단계 - 선정한 문장을 의미 단위(어구)로 나누어 7~10개 조각으로 분리 (chunks)
+  ★ 너무 큰 덩어리로 나누지 말고, 2~3단어 정도의 짧은 어구 단위로 잘게 나눌 것 (예: "designing" / "a career path" / "requires" / "preparation" / "too")
+  ★ 조각이 너무 적으면(6개 이하) 문제가 쉬워지므로, 반드시 7개 이상 확보할 것
 3단계 - 나눈 조각을 무작위 순서로 섞어 wordBank에 " / "로 구분해 나열 (실제 정답 순서와 반드시 다르게 섞을 것)
 4단계 - answer 필드에 조각들을 올바른 순서로 이어붙인 완전한 문장을 작성 (마침표 포함, sourceSentence와 동일해야 함)
 5단계 - 출력 전, wordBank의 조각들을 answer 순서대로 재배열했을 때 sourceSentence와 정확히 일치하는지 스스로 검증
