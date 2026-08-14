@@ -27,10 +27,10 @@ const STAGES = [
   { id: 3, label: '4컷 만화' },
   { id: 4, label: '내 단어장' },
   { id: 5, label: '이 글의 핵심 3단어' },
-  { id: 6, label: '주제 한 문장' },
-  { id: 7, label: '실전 문제' },
-  { id: 8, label: '어법 총정리' },
-  { id: 9, label: '서술형 문제' },
+  { id: 6, label: '주제 찾기' },
+  { id: 7, label: '요약문 빈칸' },
+  { id: 8, label: '어법·어휘 10선' },
+  { id: 9, label: '어구 배열' },
 ]
 
 // 각 Stage 별 초기 settings 불러오기
