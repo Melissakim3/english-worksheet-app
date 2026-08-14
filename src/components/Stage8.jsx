@@ -1,3 +1,16 @@
+const TAG_COLORS = {
+  blank:   '#c00000',
+  gram:    '#1a1a1a',
+  active:  '#1a6e3a',
+  passive: '#2a5caa',
+  participle: '#7b3fa0',
+  wrong:   '#e67e00',
+}
+const TAG_LABELS = {
+  blank: '빈칸', gram: '어법', active: '능동', passive: '수동',
+  participle: '분사구문', wrong: '알맞지않은단어'
+}
+
 export default function Stage8({ data, settings }) {
   const enSize = settings?.enSize ?? 11.5
   const koSize = settings?.koSize ?? 10
@@ -5,35 +18,40 @@ export default function Stage8({ data, settings }) {
   if (!data || data.error) return null
 
   const items = data.items || []
+  const passage = data.passage || ''
 
   return (
     <div>
-      {items.length === 0 && (
-        <div style={{fontSize:koSize, color:'#aaa'}}>
-          * 어법 포인트가 아직 생성되지 않았습니다.
+      {/* 지문 전체 표시 — 문제 번호(①~⑩) 인라인 포함 */}
+      {passage ? (
+        <div style={{
+          fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:2.2,
+          marginBottom:16, padding:'12px 16px',
+          border:'1px solid #ddd', borderRadius:4,
+          background:'#fafafa'
+        }}
+          dangerouslySetInnerHTML={{__html: passage}}
+        />
+      ) : (
+        <div style={{fontSize:koSize, color:'#aaa', marginBottom:16}}>
+          * 지문이 아직 로드되지 않았거나, AI가 passage 필드를 생성하지 않았습니다.
         </div>
       )}
 
-      <div style={{display:'flex', flexDirection:'column', gap:12}}>
+      {/* 답안 작성 칸 */}
+      <div className="answer-grid-f">
         {items.map((item, i) => (
-          <div key={i} style={{
-            border:'1px solid #ddd', borderRadius:4, padding:'10px 14px', background:'#fafafa'
-          }}>
-            <div style={{display:'flex', alignItems:'baseline', gap:8, marginBottom:6}}>
+          <div key={i} className="answer-item-f">
+            <div className="q-label-f" style={{fontSize:koSize*0.8}}>
               <span style={{
-                background:'#1a1a1a', color:'#fff', fontSize:koSize*0.8, fontWeight:800,
-                padding:'1px 6px', borderRadius:2, flexShrink:0
-              }}>{item.num}</span>
-              <span style={{fontSize:koSize, fontWeight:700}}>{item.point}</span>
+                background: TAG_COLORS[item.type] || '#1a1a1a',
+                color:'#fff', fontSize:koSize*0.75, fontWeight:800,
+                padding:'0 4px', borderRadius:2, marginRight:3,
+                fontFamily:'var(--font-sans)'
+              }}>{TAG_LABELS[item.type] || item.label}</span>
+              {item.num})
             </div>
-
-            <div style={{
-              fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:1.85, marginBottom:6
-            }} dangerouslySetInnerHTML={{__html: item.sentence}} />
-
-            <div style={{fontSize:koSize*0.95, color:'#555', lineHeight:1.6}}>
-              {item.explanation}
-            </div>
+            <div className="q-box-f" />
           </div>
         ))}
       </div>
