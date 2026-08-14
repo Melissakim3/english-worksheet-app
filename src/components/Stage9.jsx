@@ -1,6 +1,4 @@
-import { useState } from 'react'
-
-function QBlock({ num, q, enSize, koSize, showAnswer }) {
+function QBlock({ num, q, enSize, koSize }) {
   if (!q) return null
   const EN = { fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:1.95 }
   const KO = { fontSize:koSize, lineHeight:1.65 }
@@ -43,27 +41,11 @@ function QBlock({ num, q, enSize, koSize, showAnswer }) {
         <span style={{...KO, fontWeight:600}}>정답:</span>
         <div style={{flex:1, borderBottom:'1.5px solid #1a1a1a', minHeight:24}} />
       </div>
-
-      {/* 정답/해설 (교사용 토글) */}
-      {showAnswer && (
-        <div style={{marginTop:8, padding:'8px 12px', background:'#fff8f0',
-          border:'1px solid #f0d090', borderRadius:3}}>
-          <span style={{fontWeight:700, color:'#c00000', fontSize:koSize}}>정답: </span>
-          <span style={{...EN, color:'#c00000'}}>{q.answer}</span>
-          <div style={{...KO, color:'#555', marginTop:4}}>{q.explanation}</div>
-          {q.reason && (
-            <div style={{...KO, color:'#888', marginTop:4, fontSize:koSize*0.85}}>
-              (선정 이유: {q.reason})
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
 
 export default function Stage9({ data, settings }) {
-  const [showAnswer, setShowAnswer] = useState(false)
   const enSize = settings?.enSize ?? 11.5
   const koSize = settings?.koSize ?? 10
 
@@ -73,27 +55,11 @@ export default function Stage9({ data, settings }) {
 
   return (
     <div>
-      <QBlock num={1} q={q1} enSize={enSize} koSize={koSize} showAnswer={showAnswer} />
+      <QBlock num={1} q={q1} enSize={enSize} koSize={koSize} />
 
       {q1 && q2 && <hr style={{border:'none', borderTop:'1px dotted #ddd', margin:'16px 0'}} />}
 
-      <QBlock num={2} q={q2} enSize={enSize} koSize={koSize} showAnswer={showAnswer} />
-
-      {/* 정답/해설 토글 버튼 */}
-      <div style={{textAlign:'center', marginTop:16}}>
-        <button
-          className="no-print"
-          onClick={() => setShowAnswer(v => !v)}
-          style={{
-            padding:'6px 20px', border:'1.5px solid #1a1a1a', borderRadius:3,
-            background: showAnswer ? '#1a1a1a' : '#fff',
-            color: showAnswer ? '#fff' : '#1a1a1a',
-            fontFamily:'var(--font-sans)', fontWeight:700, fontSize:koSize,
-            cursor:'pointer'
-          }}>
-          {showAnswer ? '정답 숨기기' : '정답 및 해설 보기'}
-        </button>
-      </div>
+      <QBlock num={2} q={q2} enSize={enSize} koSize={koSize} />
     </div>
   )
 }
