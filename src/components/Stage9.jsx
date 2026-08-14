@@ -12,35 +12,13 @@ function QBlock({ num, q, enSize, koSize }) {
         <span style={{...KO, color:'#888', marginLeft:'auto'}}>[{q.points || 5}점]</span>
       </div>
 
-      {/* 선정된 원문 문장 */}
-      <div style={{...EN, border:'1px solid #ddd', borderRadius:3, padding:'10px 14px',
-        background:'#fafafa', lineHeight:2.1, marginBottom:8}}>
-        {q.sourceSentence}
-      </div>
-
-      {/* 조건 박스 */}
-      {q.conditions?.length > 0 && (
-        <div style={{border:'1px solid #bbb', borderRadius:2, padding:'8px 12px', marginBottom:6}}>
-          <div style={{fontWeight:700, fontSize:koSize*0.9, marginBottom:4, fontFamily:'var(--font-sans)'}}>〈조 건〉</div>
-          {q.conditions.map((c, i) => (
-            <div key={i} style={{...KO, color:'#333'}}>• {c}</div>
-          ))}
-        </div>
-      )}
-
-      {/* 보기 박스 (있을 때만) */}
+      {/* 보기: 뒤섞인 어구 (정답 순서 아님) */}
       {q.wordBank && (
-        <div style={{border:'1px solid #bbb', borderRadius:2, padding:'8px 12px', marginBottom:8}}>
-          <div style={{fontWeight:700, fontSize:koSize*0.9, marginBottom:4, fontFamily:'var(--font-sans)'}}>〈보 기〉</div>
-          <div style={{...EN, letterSpacing:1}}>{q.wordBank}</div>
+        <div style={{border:'1px solid #bbb', borderRadius:2, padding:'10px 14px'}}>
+          <div style={{fontWeight:700, fontSize:koSize*0.9, marginBottom:6, fontFamily:'var(--font-sans)'}}>〈보 기〉</div>
+          <div style={{...EN, letterSpacing:0.5, lineHeight:1.9}}>{q.wordBank}</div>
         </div>
       )}
-
-      {/* 답안 작성란 */}
-      <div style={{display:'flex', alignItems:'center', gap:8, marginTop:6}}>
-        <span style={{...KO, fontWeight:600}}>정답:</span>
-        <div style={{flex:1, borderBottom:'1.5px solid #1a1a1a', minHeight:24}} />
-      </div>
     </div>
   )
 }
