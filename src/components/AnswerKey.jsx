@@ -33,27 +33,32 @@ export default function AnswerKey({ results, selectedStages }) {
           <span style={stageLabel}>[Stage7 요약문빈칸]</span>
           <span style={chipStyle}>정답 {q7.answer}</span>
           {q7.blanks?.map((b, i) => (
-            <span key={i} style={chipStyle}>({b.key}) {b.answer}</span>
-          ))}
-        </div>
-      )}
-
-      {/* Stage 8 — 어법 10문항 */}
-      {hasQ8 && (
-        <div style={rowStyle}>
-          <span style={stageLabel}>[Stage8 어법]</span>
-          {q8.items.map((item, i) => (
             <span key={i} style={chipStyle}>
-              {item.num}. {item.answer || item.correctWord}
+              ({b.key}) {b.answer}{b.ko ? ` (${b.ko})` : ''}
             </span>
           ))}
         </div>
       )}
 
-      {/* Stage 9 — 서술형 2문항 */}
+      {/* Stage 8 — 어법·어휘 10문항 */}
+      {hasQ8 && (
+        <div style={rowStyle}>
+          <span style={stageLabel}>[Stage8 어법·어휘]</span>
+          {q8.items.map((item, i) => {
+            const word = item.answer || item.correctWord
+            return (
+              <span key={i} style={chipStyle}>
+                {item.num}. {word}{item.ko ? ` (${item.ko})` : ''}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Stage 9 — 어구 배열 2문항 */}
       {hasQ9 && (
         <div style={rowStyle}>
-          <span style={stageLabel}>[Stage9 서술형]</span>
+          <span style={stageLabel}>[Stage9 어구배열]</span>
           {q9.q1 && <span style={chipStyle}>1. {q9.q1.answer}</span>}
           {q9.q2 && <span style={chipStyle}>2. {q9.q2.answer}</span>}
         </div>
