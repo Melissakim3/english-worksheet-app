@@ -17,7 +17,7 @@ export default function AnswerKey({ results, selectedStages }) {
 
   return (
     <div className="answer-key-section">
-      <div className="answer-key-header">정답 — 교사용 (학생 배부 금지)</div>
+      <div className="answer-key-header">정답</div>
 
       {/* Stage 6 — 주제 (선택지 1문항) */}
       {hasQ6 && (
