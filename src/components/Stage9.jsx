@@ -6,8 +6,11 @@ function QBlock({ num, q, enSize, koSize }) {
   return (
     <div style={{marginBottom:20}}>
       <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
-        <span style={{background:'#2a5caa', color:'#fff', fontWeight:800, fontSize:koSize*0.85,
-          padding:'2px 8px', borderRadius:2, fontFamily:'var(--font-sans)'}}>논술형 {num}</span>
+        <span style={{
+          background:'none', border:'1.5px solid #2a5caa', color:'#2a5caa',
+          fontWeight:800, fontSize:koSize*0.85,
+          padding:'1px 7px', borderRadius:2, fontFamily:'var(--font-sans)'
+        }}>논술형 {num}</span>
         <span style={{...KO, fontWeight:600}}>{q.direction}</span>
         <span style={{...KO, color:'#888', marginLeft:'auto'}}>[{q.points || 5}점]</span>
       </div>
