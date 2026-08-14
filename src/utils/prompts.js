@@ -1,10 +1,75 @@
-// prompts.js 에 아래 4개 함수를 추가하세요.
-// 기존 SYSTEM_BASE, callAI import는 그대로 사용합니다.
+import { callAI } from './ai.js'
+
+const SYSTEM_BASE = `당신은 한국 고등학교 영어 선생님을 위한 영어 지문 분석 전문가입니다.
+모든 분석은 수능 영어 기준에 맞게, 정확하고 교육적으로 작성하세요.
+반드시 JSON 형식으로만 응답하세요. 다른 텍스트나 마크다운 없이 순수 JSON만 출력하세요.`
 
 // ─────────────────────────────────────────
-// 1. 주제 (고2 수준)
+// Stage 1~5 : 원본 그대로 (수정 없음)
 // ─────────────────────────────────────────
-export async function analyzeTopicQ(passage, level, modelId) {
+
+export async function analyzeStage1(passage, level, modelId) {
+  return callAI(SYSTEM_BASE, `
+다음 영어 지문을 문장 단위로 분석하여 구조 분석표를 만들어주세요.
+난이도: ${level} / 지문: """${passage}"""
+JSON 형식:
+{
+  "sentences": [
+    { "en": "원문", "ko": "한글 해석", "logic": "논리구조", "grammar": "어법포인트", "synonyms": [{"word":"단어","syn":"동의어","ant":"반의어"}] }
+  ]
+}
+규칙: 관계대명사절/대시/동격어구는 앞 문장과 같은 칸. synonyms는 핵심 단어 1~2개만.
+번역 규칙:
+- 관용어구·숙어는 직역 금지, 한국어에서 굳어진 표현으로 번역할 것
+  (예: family leave → 육아휴직, on maternity leave → 출산휴가 중,
+       come to terms with → 받아들이다, break the ice → 어색함을 깨다)
+- 번역은 수능 교재·교육 현장에서 실제 쓰이는 표현 기준으로 작성할 것
+- 단어 뜻이 아닌 문맥상 자연스러운 한국어로 번역할 것
+`, modelId)
+}
+
+export async function analyzeStage2(passage, level, modelId) {
+  return callAI(SYSTEM_BASE, `
+다음 영어 지문의 논리 흐름을 색깔로 표시해주세요.
+난이도: ${level} / 지문: """${passage}"""
+JSON 형식:
+{
+  "legend": [{"color":"h1","label":"개념명","colorName":"#FFE066"},{"color":"h2","label":"개념명","colorName":"#85E89D"},{"color":"h3","label":"개념명","colorName":"#FFB3C6"},{"color":"h4","label":"개념명","colorName":"#79C8F5"},{"color":"h5","label":"개념명","colorName":"#D4AAFF"}],
+  "coloredPassage": "지문 HTML (<span class='h1'>단어</span> 형식)",
+  "flowSteps": [{"label":"단계명","ko":"한글설명"}],
+  "flowSummary": "논리 흐름 한 줄 요약"
+}
+`, modelId)
+}
+
+export async function analyzeStage4(passage, level, modelId) {
+  return callAI(SYSTEM_BASE, `
+다음 지문에서 중요 단어를 추출해 단어장을 만들어주세요.
+난이도: ${level} / 지문: """${passage}"""
+JSON 형식:
+{
+  "words": [{"num":1,"word":"단어","pos":"품사","meaning":"한글뜻","synonyms":"동의어","antonyms":"반의어 또는 —"}]
+}
+규칙: 등장 순서, 구동사 포함, 최소 12개, 쉬운 단어 제외.
+`, modelId)
+}
+
+export async function analyzeStage5(passage, level, modelId) {
+  return callAI(SYSTEM_BASE, `
+다음 지문에서 핵심 키워드 3개를 추출하고 분석해주세요.
+난이도: ${level} / 지문: """${passage}"""
+JSON 형식:
+{
+  "keywords": [{"word":"키워드(단일단어)","ko":"한글뜻","role":"지문 논리에서의 역할(1문장)"}],
+  "flowSummary": "세 키워드 논리 흐름(1~2문장)"
+}
+`, modelId)
+}
+
+// ─────────────────────────────────────────
+// Stage 6 : 주제 한 문장 → 주제 객관식 문제 (고2 수준)
+// ─────────────────────────────────────────
+export async function analyzeStage6(passage, keywords, level, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 지문의 주제를 묻는 수능형 객관식 문제 1개를 만들어주세요.
 난이도: ${level} / 지문: """${passage}"""
@@ -29,9 +94,9 @@ JSON 형식:
 }
 
 // ─────────────────────────────────────────
-// 2. 요약문 + 빈칸 2~3개
+// Stage 7 : 실전 문제 → 요약문 + 빈칸 2~3개
 // ─────────────────────────────────────────
-export async function analyzeSummaryBlank(passage, level, modelId) {
+export async function analyzeStage7(passage, level, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 지문을 요약문으로 압축하고, 요약문 안에서 빈칸 문제를 만들어주세요.
 난이도: ${level} / 지문: """${passage}"""
@@ -62,9 +127,9 @@ JSON 형식:
 }
 
 // ─────────────────────────────────────────
-// 3. 어법 중요 포인트 10개
+// Stage 8 : 어법 총정리 → 중요 어법 포인트 10개
 // ─────────────────────────────────────────
-export async function analyzeGrammar10(passage, level, modelId) {
+export async function analyzeStage8(passage, level, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 지문에서 어법 포인트 10개를 골라 정리해주세요.
 난이도: ${level} / 지문: """${passage}"""
@@ -88,9 +153,9 @@ JSON 형식:
 }
 
 // ─────────────────────────────────────────
-// 4. 서술형 - 가장 나올만한 문장 2개 선정 후 출제
+// Stage 9 : 서술형 문제 → 가장 나올만한 문장 2개로 서술형 2문항
 // ─────────────────────────────────────────
-export async function analyzeConstructedResponse2(passage, level, difficulty, modelId) {
+export async function analyzeStage9(passage, level, difficulty, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 지문에서 서술형으로 출제하기 가장 적합한 문장 2개를 뽑아 문제를 만들어주세요.
 난이도: ${level} / 서술형 난이도: ${difficulty} / 지문: """${passage}"""
