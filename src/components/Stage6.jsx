@@ -1,28 +1,43 @@
 export default function Stage6({ data, settings }) {
-  const sentences = data?.topicSentences || []
   const enSize = settings?.enSize ?? 11.5
   const koSize = settings?.koSize ?? 10
 
+  if (!data || data.error) return null
+
+  const { direction, evidence, options = [], answer, explanation } = data
+
   return (
-    <table>
-      <thead>
-        <tr>
-          <th style={{width:'10%'}}>키워드</th>
-          <th style={{width:'10%'}}>유형</th>
-          <th style={{width:'43%'}}>주제 표현</th>
-          <th style={{width:'37%'}}>한글 해석</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sentences.map((s, i) => (
-          <tr key={i}>
-            <td><span className={`kw-inline ${s.kwClass}-color`} style={{fontSize:enSize}}>{s.keyword}</span></td>
-            <td><span className={`type-badge ${s.typeBadge}`}>{s.type}</span></td>
-            <td style={{fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:1.7}}>{s.en}</td>
-            <td style={{fontSize:koSize, lineHeight:1.7, color:'#555'}}>{s.ko}</td>
-          </tr>
+    <div>
+      {/* 문제 지시문 */}
+      <div className="q-direction" style={{fontSize:koSize, fontWeight:700, marginBottom:10}}>
+        {direction}
+      </div>
+
+      {/* 근거 문장 (교사용 표시, 참고용으로 노출) */}
+      {evidence && (
+        <div className="q-evidence" style={{
+          fontFamily:'Georgia, serif', fontSize:enSize, lineHeight:1.7,
+          padding:'10px 14px', background:'#f7f5f0', border:'1px solid #ddd',
+          borderRadius:3, marginBottom:12
+        }}>
+          {evidence}
+        </div>
+      )}
+
+      {/* 선택지 */}
+      <div className="q-options" style={{display:'flex', flexDirection:'column', gap:6}}>
+        {options.map((opt, i) => (
+          <div key={i} style={{fontSize:koSize, lineHeight:1.7}}>{opt}</div>
         ))}
-      </tbody>
-    </table>
+      </div>
+
+      {/* 정답/해설 */}
+      <div className="q-answer-block" style={{marginTop:14, paddingTop:10, borderTop:'1px dashed #ccc'}}>
+        <div style={{fontSize:koSize, fontWeight:700}}>정답: {answer}</div>
+        {explanation && (
+          <p style={{fontSize:koSize, color:'#555', lineHeight:1.7, marginTop:4}}>{explanation}</p>
+        )}
+      </div>
+    </div>
   )
 }
