@@ -64,7 +64,7 @@ export default function Stage2({ data, settings }) {
   const koSize = settings?.koSize ?? 10
 
   const [lang, setLang] = useState('en')         // en / ko / both
-  const [markStyle, setMarkStyle] = useState('highlight')
+  const [markStyle, setMarkStyle] = useState('underline')
 
   return (
     <div>
