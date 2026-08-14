@@ -322,9 +322,10 @@ body {
   font-weight: 800;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--white);
-  background: var(--black);
-  padding: 2px 8px;
+  color: var(--black);
+  background: none;
+  border: 1.5px solid var(--black);
+  padding: 1px 7px;
   border-radius: 2px;
   white-space: nowrap;
   font-family: var(--font-mono);
