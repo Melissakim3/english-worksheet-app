@@ -14,7 +14,7 @@ export default function Stage1({ data, settings }) {
   const lh     = settings?.lineHeight ?? 3.0
   const synSize = koSize * 0.80
 
-  const [enWeight, setEnWeight] = useState(600)
+  const [enWeight, setEnWeight] = useState(500)
   const [enScale, setEnScale]   = useState(1.1)  // 1.0 ~ 1.4
 
   return (
@@ -65,13 +65,13 @@ export default function Stage1({ data, settings }) {
               }}>
                 <span style={{
                   fontFamily:'var(--font-mono)',
-                  fontSize: enSize * 0.72,
-                  fontWeight: 800,
-                  color: '#bbb',
+                  fontSize: enSize * 0.82,
+                  fontWeight: 900,
+                  color: '#1a1a1a',
                   marginRight: 5,
                   verticalAlign: 'middle',
                   userSelect: 'none',
-                }}>{i + 1}</span>
+                }}>{i + 1}.</span>
                 {s.en}
               </td>
 
