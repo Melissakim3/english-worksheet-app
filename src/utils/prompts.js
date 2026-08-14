@@ -12,9 +12,15 @@ export async function analyzeStage1(passage, level, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 영어 지문을 문장 단위로 분석하여 구조 분석표를 만들어주세요.
 난이도: ${level} / 지문: """${passage}"""
+
+★★★ 중요: 지문 안에 소제목(굵은 글씨 제목, 예: "Set Up Goals", "Fill in the Gaps" 같은 섹션 헤딩)이 있으면
+절대 빠뜨리지 말고, 해당 소제목이 나오는 위치에 {"heading": "소제목 원문"} 형태로 sentences 배열 안에 그대로 삽입할 것.
+소제목은 분석 대상이 아니라 구조 표시용이므로 en/ko/logic/grammar 필드 없이 heading 필드만 넣을 것.
+
 JSON 형식:
 {
   "sentences": [
+    { "heading": "소제목 원문 (있을 경우에만, 나오는 순서 그대로)" },
     { "en": "원문", "ko": "한글 해석", "logic": "논리구조", "grammar": "어법포인트", "synonyms": [{"word":"단어","syn":"동의어","ant":"반의어"}] }
   ]
 }
@@ -27,7 +33,6 @@ JSON 형식:
 - 단어 뜻이 아닌 문맥상 자연스러운 한국어로 번역할 것
 `, modelId)
 }
-
 export async function analyzeStage2(passage, level, modelId) {
   return callAI(SYSTEM_BASE, `
 다음 영어 지문의 논리 흐름을 색깔로 표시해주세요.
