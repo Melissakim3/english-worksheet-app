@@ -146,9 +146,16 @@ export async function analyzeStage8(passage, level, modelId) {
 
 작업 순서 (반드시 순서대로 수행):
 1단계 - 지문 안에서 다음 3가지 유형의 포인트를 후보로 최대한 많이 찾기
-  - gram(어법): 관계사/분사/시제/수동태/도치/비교/접속사 등 문법적으로 옳고 그름을 구별해야 하는 지점
-  - context(문맥 어휘): 뜻이 비슷해 헷갈리지만 문맥상 정확히 하나만 맞는 어휘 짝
-  - spell(철자 혼동 어휘): 철자가 비슷해서 헷갈리는 어려운 단어 짝 (예: affect/effect, principal/principle, quite/quiet, through/though, adopt/adapt 등 고등 수준 어휘)
+  - gram(어법): 문장 구조를 정확히 분석해야만 답을 고를 수 있는 지점만 사용
+    (예: 조동사+완료형 "may have p.p." vs "may + 동사원형", 시제 일치, 수동태/능동태,
+     분사구문의 능동(-ing)/수동(p.p.), 관계대명사 vs 관계부사, 원형부정사 vs to부정사,
+     도치구문, 비교급/최상급 구조, 가정법, 접속사 vs 전치사 구별 등)
+    ★ 절대 금지: 둘 다 문법적으로 맞고 의미도 자연스러워서 사실상 답이 애매한 유사 표현 짝
+      (예: "discover/uncover", "provide/deliver"처럼 둘 다 말이 되는 경우 — 이런 건 문제로 만들지 말 것)
+  - context(문맥 어휘): 문법적으로는 둘 다 가능하지만, 문맥·논리 흐름상 명확히 하나만 맞는 어휘 짝
+    (예: 앞뒤 문장의 인과관계, 대조관계를 정확히 읽어야만 구별되는 경우)
+  - spell(철자 혼동 어휘): 철자가 비슷해서 헷갈리는 어려운 단어 짝 (예: affect/effect, principal/principle, quite/quiet, through/though, adopt/adapt, economic/economical, sensible/sensitive 등 고등 수준 이상 어휘)
+  ★ 전체적으로 중3 문제집보다 명백히 어려운 수준으로만 구성할 것. 문법 지식이나 정확한 문맥 파악 없이 직관만으로 풀리는 항목은 전부 제외
 2단계 - 위 3유형을 섞어서 정확히 10개 선별 (gram 4개, context 3개, spell 3개 정도로 배분, 한 유형에 쏠리지 않게)
 3단계 - passage 필드에 지문 "전체"를 이어서 HTML로 작성하고, 10개 포인트 전부를 지문 안에서 (①선택지A / 선택지B) 형식으로 인라인 삽입
   ★ 모든 항목은 선택형으로만 만들 것 (빈칸 쓰기 방식 절대 사용 금지)
