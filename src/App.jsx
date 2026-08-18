@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import {
   analyzeStage1, analyzeStage2, analyzeStage4, analyzeStage5,
@@ -46,6 +46,7 @@ function saveStageSettings(id, s) {
 }
 
 export default function App() {
+  const [title, setTitle] = useState('')
   const [passage, setPassage] = useState('')
   const [level, setLevel] = useState('고2')
   const [modelId, setModelId] = useState(getSavedModelId())
@@ -62,6 +63,11 @@ export default function App() {
   const [results, setResults] = useState({})
   const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8,9]))
   const [error, setError] = useState('')
+
+  // 제목을 브라우저 탭 제목(=인쇄/PDF 저장 시 기본 파일명)에 반영
+  useEffect(() => {
+    document.title = title || '영어 지문 분석 워크시트'
+  }, [title])
 
   // 각 Stage 개별 settings
   const [stageSettings, setStageSettings] = useState(() =>
@@ -80,7 +86,7 @@ export default function App() {
   const handleWordExport = async () => {
     setWordLoading(true)
     try {
-      await exportToWord(results, passage)
+      await exportToWord(results, passage, title)
     } catch(e) {
       alert('Word 파일 생성 오류: ' + e.message)
     }
@@ -241,7 +247,7 @@ export default function App() {
   const downloadWordForPassage = async (psg, res, idx) => {
     setWordDownloading(idx)
     try {
-      await exportToWord(res, psg)
+      await exportToWord(res, psg, title)
     } catch (e) {
       setError('Word 생성 오류: ' + e.message)
     }
@@ -254,7 +260,19 @@ export default function App() {
   return (
     <div className="app-wrap">
       <div className="top-bar">
-        <h1>영어 지문 분석 워크시트</h1>
+        <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <h1>영어 지문 분석 워크시트</h1>
+          <input
+            className="no-print"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="지문 제목 입력 (저장 파일명으로 사용됨)"
+            style={{
+              background:'transparent', border:'1px solid #555', borderRadius:3,
+              color:'#fff', fontSize:11, padding:'3px 8px', outline:'none', minWidth:200
+            }}
+          />
+        </div>
         <span className="version">v1.0 · {currentModel.label}</span>
       </div>
 
