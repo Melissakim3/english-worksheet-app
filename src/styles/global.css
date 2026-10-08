@@ -826,3 +826,22 @@ tbody td { padding: 5px 8px; vertical-align: top; line-height: 1.65; }
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ── 지문 완전정복 워크북 ── */
+.workbook-panel {
+  background: var(--white);
+  border: 1.5px solid var(--black);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin: 12px 0 20px;
+}
+.workbook-head { display: flex; gap: 16px; align-items: center; }
+.workbook-head > div { flex: 1; }
+.workbook-head h2 { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--grey-mid); margin-bottom: 4px; }
+.workbook-head p { font-size: 11px; color: var(--grey-dark); }
+.workbook-btn { width: auto; padding: 10px 18px; white-space: nowrap; }
+.workbook-error { margin-top: 10px; color: #c00; font-size: 11px; white-space: pre-wrap; font-family: var(--font-sans); }
+.workbook-panel .worksheet-toolbar { margin-top: 14px; align-items: center; }
+.workbook-cost { font-size: 11px; color: var(--grey-dark); margin-left: 6px; }
+.workbook-tip { font-size: 11px; color: var(--grey-mid); margin: 6px 0 8px; }
+.workbook-frame { width: 100%; height: 80vh; border: 1px solid var(--grey-light); background: #fff; }

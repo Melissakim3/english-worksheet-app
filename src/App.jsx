@@ -20,6 +20,7 @@ import Stage8 from './components/Stage8.jsx'
 import Stage9 from './components/Stage9.jsx'
 import AnswerKey from './components/AnswerKey.jsx'
 import ModelSelector from './components/ModelSelector.jsx'
+import WorkbookPanel from './components/WorkbookPanel.jsx'
 
 const STAGES = [
   { id: 1, label: '문장 뜯어보기' },
@@ -385,6 +386,10 @@ export default function App() {
               : `분석 시작 → (${currentModel.label})`
           }
         </button>
+
+        {!multiMode && (
+          <WorkbookPanel passage={passage} title={title} level={level} modelId={modelId} modelLabel={currentModel.label} />
+        )}
 
         {progress.length > 0 && (
           <div className="progress-wrap no-print">
