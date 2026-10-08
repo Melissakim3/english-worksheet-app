@@ -56,18 +56,19 @@ export function saveModelId(id) {
 }
 
 // ── 공통 호출 함수 ─────────────────────────────────────
-export async function callAI(systemPrompt, userPrompt, modelId) {
+// opts.maxTokens: 긴 답(워크북 등)일 때 늘림 · opts.withUsage: { data, usage:{input, output} }로 돌려줌 (비용 계산용)
+export async function callAI(systemPrompt, userPrompt, modelId, opts = {}) {
   const model = MODELS.find(m => m.id === modelId) || MODELS[0]
 
   if (model.provider === 'anthropic') {
-    return callClaude(systemPrompt, userPrompt, model.id)
+    return callClaude(systemPrompt, userPrompt, model.id, opts)
   } else {
-    return callOpenAI(systemPrompt, userPrompt, model.id)
+    return callOpenAI(systemPrompt, userPrompt, model.id, opts)
   }
 }
 
 // ── Anthropic API ──────────────────────────────────────
-async function callClaude(systemPrompt, userPrompt, modelId) {
+async function callClaude(systemPrompt, userPrompt, modelId, { maxTokens = 4096, withUsage = false } = {}) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY가 .env에 없습니다.')
 
@@ -81,7 +82,7 @@ async function callClaude(systemPrompt, userPrompt, modelId) {
     },
     body: JSON.stringify({
       model: modelId,
-      max_tokens: 4096,
+      max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -94,11 +95,12 @@ async function callClaude(systemPrompt, userPrompt, modelId) {
 
   const data = await res.json()
   const text = data.content.map(b => b.text || '').join('')
+  if (withUsage) return { data: parseJSON(text), usage: { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 } }
   return parseJSON(text)
 }
 
 // ── OpenAI API ─────────────────────────────────────────
-async function callOpenAI(systemPrompt, userPrompt, modelId) {
+async function callOpenAI(systemPrompt, userPrompt, modelId, { maxTokens = 4096, withUsage = false } = {}) {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY
   if (!apiKey) throw new Error('VITE_OPENAI_API_KEY가 .env에 없습니다.')
 
@@ -110,7 +112,7 @@ async function callOpenAI(systemPrompt, userPrompt, modelId) {
     },
     body: JSON.stringify({
       model: modelId,
-      max_tokens: 4096,
+      max_tokens: maxTokens,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -125,6 +127,7 @@ async function callOpenAI(systemPrompt, userPrompt, modelId) {
 
   const data = await res.json()
   const text = data.choices?.[0]?.message?.content || ''
+  if (withUsage) return { data: parseJSON(text), usage: { input: data.usage?.prompt_tokens || 0, output: data.usage?.completion_tokens || 0 } }
   return parseJSON(text)
 }
 

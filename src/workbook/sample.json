@@ -1,0 +1,370 @@
+{
+  "title": "올림포스 독해의 기본 1 · Ch. 05",
+  "sentences": [
+    "With technology came the idea that innovation and novelty are intrinsic components of civilization.",
+    "Constant changes in technologies, society, and economics are so ingrained in our daily lives that it is hard to understand that this state of affairs wasn’t the rule in the ancient days.",
+    "A few hundred years ago, change was so slow that most people expected the future to be much like the past.",
+    "The concept that the future would bring improvements in people’s lives was never common, much less popular.",
+    "All that changed when changes began to occur so often that they were not only perceptible but expected.",
+    "Since the advent of technology, people expect the future to bring new things that will improve their daily lives.",
+    "However, many of us now fear that the changes may come too fast, and may be too profound, for normal people to assimilate them."
+  ],
+  "study": [
+    {
+      "ko": "기술의 도래와 함께 혁신과 새로움이 문명의 본질적 구성 요소라는 생각이 생겨났다.",
+      "tag": "주장",
+      "logic": "기술의 등장 → 혁신이 문명의 필수 요소라는 생각",
+      "grammar": "도치: came의 주어 = the idea / that절 = 동격",
+      "words": [
+        {
+          "en": "intrinsic",
+          "ko": "본질적인",
+          "syn": [
+            ["essential", "필수적인"],
+            ["inherent", "내재된"]
+          ],
+          "ant": [
+            ["extrinsic", "외적인"],
+            ["external", "외부의"]
+          ]
+        },
+        {
+          "en": "novelty",
+          "ko": "새로움",
+          "syn": [
+            ["newness", "새로움"],
+            ["originality", "독창성"]
+          ],
+          "ant": [
+            ["familiarity", "익숙함"]
+          ]
+        }
+      ]
+    },
+    {
+      "ko": "기술, 사회, 경제의 끊임없는 변화가 우리 일상에 너무 깊이 배어 있어서, 이러한 상태가 고대에는 일반적이지 않았다는 것을 이해하기 어렵다.",
+      "tag": "대조",
+      "logic": "지금의 끊임없는 변화 ↔ 고대에는 그렇지 않음",
+      "grammar": "so ~ that / 가주어 it ~ 진주어 to V / 단수 주어 → wasn’t",
+      "words": [
+        {
+          "en": "ingrained",
+          "ko": "깊이 배어든",
+          "syn": [
+            ["deeply rooted", "깊이 뿌리박힌"],
+            ["embedded", "박혀 있는"]
+          ],
+          "ant": [
+            ["superficial", "피상적인"],
+            ["temporary", "일시적인"]
+          ]
+        }
+      ]
+    },
+    {
+      "ko": "수백 년 전만 해도 변화가 너무 느려서 대부분의 사람들은 미래가 과거와 거의 같을 것이라고 예상했다.",
+      "tag": "과거",
+      "logic": "느린 변화 → 미래도 과거와 같다고 예상",
+      "grammar": "so ~ that / expect + O + to V",
+      "words": [
+        {
+          "en": "slow",
+          "ko": "느린",
+          "syn": [
+            ["gradual", "점진적인"],
+            ["sluggish", "굼뜬"]
+          ],
+          "ant": [
+            ["rapid", "빠른"],
+            ["swift", "신속한"]
+          ]
+        }
+      ]
+    },
+    {
+      "ko": "미래가 사람들의 삶에 개선을 가져올 것이라는 개념은 결코 흔하지 않았고, 하물며 인기 있지도 않았다.",
+      "tag": "강조",
+      "logic": "‘미래가 나아진다’는 생각은 흔하지도, 인기도 없었음",
+      "grammar": "동격 that절 / much less = 하물며 ~도 아닌",
+      "words": [
+        {
+          "en": "improvement",
+          "ko": "개선",
+          "syn": [
+            ["progress", "진보"],
+            ["advancement", "발전"]
+          ],
+          "ant": [
+            ["deterioration", "악화"],
+            ["decline", "쇠퇴"]
+          ]
+        }
+      ]
+    },
+    {
+      "ko": "변화가 너무 자주 일어나기 시작해서 감지될 뿐만 아니라 기대되기까지 하자 그 모든 것이 바뀌었다.",
+      "tag": "전환점",
+      "logic": "변화가 잦아짐 → 느껴지고 기대됨",
+      "grammar": "All that = 3·4번 상황 / not only A but B (형용사 병렬)",
+      "words": [
+        {
+          "en": "perceptible",
+          "ko": "감지할 수 있는",
+          "syn": [
+            ["noticeable", "눈에 띄는"],
+            ["observable", "관찰 가능한"]
+          ],
+          "ant": [
+            ["imperceptible", "감지할 수 없는"],
+            ["invisible", "보이지 않는"]
+          ]
+        }
+      ]
+    },
+    {
+      "ko": "기술의 출현 이후로, 사람들은 미래가 그들의 일상을 개선할 새로운 것들을 가져올 것이라고 기대한다.",
+      "tag": "결과",
+      "logic": "기술 출현 → 미래에 대한 긍정적 기대",
+      "grammar": "Since = ~이후로 / expect + O + to V / that = 주격 관계사",
+      "words": [
+        {
+          "en": "advent",
+          "ko": "출현, 도래",
+          "syn": [
+            ["arrival", "도착, 도래"],
+            ["emergence", "출현"]
+          ],
+          "ant": [
+            ["departure", "떠남"],
+            ["disappearance", "사라짐"]
+          ]
+        }
+      ]
+    },
+    {
+      "ko": "그러나 많은 사람들은 이제 변화가 너무 빨리 오고 너무 깊어서 보통 사람들이 그것을 받아들이지 못할 수도 있다고 우려한다.",
+      "tag": "반전",
+      "logic": "앞의 긍정적 기대 ↔ 지금의 걱정",
+      "grammar": "fear + that절 / too ~ for 의미상 주어 to V / them = the changes",
+      "words": [
+        {
+          "en": "profound",
+          "ko": "깊은, 심오한",
+          "syn": [
+            ["deep", "깊은"],
+            ["significant", "중대한"]
+          ],
+          "ant": [
+            ["superficial", "피상적인"],
+            ["trivial", "사소한"]
+          ]
+        },
+        {
+          "en": "assimilate",
+          "ko": "받아들이다",
+          "syn": [
+            ["absorb", "흡수하다"],
+            ["adapt to", "~에 적응하다"]
+          ],
+          "ant": [
+            ["reject", "거부하다"],
+            ["resist", "저항하다"]
+          ]
+        }
+      ]
+    }
+  ],
+  "flow": [
+    {
+      "label": "주장",
+      "s": [1]
+    },
+    {
+      "label": "과거 상황",
+      "s": [2, 3, 4]
+    },
+    {
+      "label": "전환점",
+      "s": [5]
+    },
+    {
+      "label": "긍정적 결과",
+      "s": [6]
+    },
+    {
+      "label": "부정적 결과",
+      "s": [7]
+    }
+  ],
+  "core": {
+    "topic": "기술 변화에 대한 사람들의 태도 변화 — 기대에서 걱정으로",
+    "gist": "기술 덕분에 사람들은 변화와 발전을 당연히 기대하게 되었지만, 이제는 변화가 너무 빠르고 깊어 따라가지 못할까 걱정한다.",
+    "contrast": "옛날: 변화가 느려 __미래 = 과거__　↔　지금: 변화를 __기대__　→　하지만 __너무 빠름__이 걱정"
+  },
+  "lv1": {
+    "words": [
+      ["intrinsic", "본질적인"],
+      ["novelty", "새로움"],
+      ["ingrained", "깊이 배어든"],
+      ["state of affairs", "상황, 사태"],
+      ["the rule", "일반적인 일, 보통"],
+      ["much less", "하물며 ~도 아닌"],
+      ["perceptible", "감지할 수 있는"],
+      ["advent", "출현, 도래"],
+      ["profound", "깊은, 심각한"],
+      ["assimilate", "받아들이다, 동화하다"]
+    ],
+    "ox": [
+      ["고대에도 변화는 늘 있는 일이었다.", "X", 2],
+      ["수백 년 전 사람들은 미래가 과거와 비슷할 것이라고 생각했다.", "O", 3],
+      ["미래가 삶을 나아지게 할 거라는 생각은 예전부터 인기가 많았다.", "X", 4],
+      ["변화가 잦아지자 사람들은 변화를 알아차리고 기대하게 되었다.", "O", 5],
+      ["오늘날 많은 사람들은 변화가 너무 느린 것을 걱정한다.", "X", 7]
+    ]
+  },
+  "lv2": {
+    "refs": [
+      ["2번 this state of affairs", "기술·사회·경제가 끊임없이 변하는 지금의 상황"],
+      ["5번 All that", "변화가 느려서 미래가 나아질 거라 기대하지 않던 옛날 상황 (3·4번)"],
+      ["5번 they", "changes (변화들)"],
+      ["6번 that", "new things (새로운 것들)"],
+      ["7번 them", "the changes (그 변화들)"]
+    ],
+    "easy": [
+      ["요즘은 ‘변화가 너무 빨라 못 따라가면 어쩌지?’ 걱정한다.", 7],
+      ["변화가 너무 익숙해서 옛날 모습이 잘 상상이 안 된다.", 2],
+      ["‘미래는 더 좋아질 거야’는 흔하지도, 인기 있지도 않았다.", 4],
+      ["기술과 함께 ‘새것이 계속 나오는 게 당연하다’는 생각이 생겼다.", 1],
+      ["지금은 ‘미래엔 생활을 편하게 할 물건이 나오겠지’ 기대한다.", 6],
+      ["옛날엔 세상이 느리게 변해 ‘내일도 어제 같겠지’ 생각했다.", 3],
+      ["변화가 잦아지자 사람들이 변화를 느끼고 기다리게 되었다.", 5]
+    ]
+  },
+  "lv3": {
+    "cards": [
+      ["가", "과거: 변화가 느려서 미래도 과거와 같을 거라 생각함"],
+      ["나", "주장: 기술과 함께 혁신이 문명의 본질이 됨"],
+      ["다", "문제: 변화가 너무 빠르고 깊어서 따라가기 어려움"],
+      ["라", "현재: 미래가 삶을 좋게 바꿀 거라 기대함"],
+      ["마", "전환점: 변화가 잦아져 느껴지고 기대되기 시작함"]
+    ],
+    "order": ["나", "가", "마", "라", "다"],
+    "steps": [
+      ["주장 (1번)", "innovation이 문명의 i________ 요소가 됨", "intrinsic"],
+      ["과거 (3·4번)", "change was so s___ that the future = the past", "slow"],
+      ["전환점 (5번)", "changes became p__________ and expected", "perceptible"],
+      ["현재 (6번)", "people expect the future to bring i__________", "improvements"],
+      ["문제 (7번)", "changes may be too fast for people to a_________ them", "assimilate"]
+    ],
+    "ownWords": "기술과 함께 혁신이 당연해짐 / 옛날엔 변화가 느려 미래도 같다고 봄 / 변화가 잦아져 기대하게 됨 / 미래가 삶을 좋게 할 거라 믿음 / 하지만 너무 빠른 변화가 걱정임",
+    "roleChoices": "A 주장　B 배경(과거)　C 전환점　D 결과(현재)　E 반전·문제",
+    "roles": ["A", "B", "B", "B", "C", "D", "E"],
+    "conn": [
+      ["The concept … was never common, ________ popular.", "much less", "4번 · 앞보다 더 강하게 부정"],
+      ["________, many of us now fear that the changes …", "However", "7번 · 앞(기대)과 반대(걱정)"],
+      ["________ the advent of technology, people expect …", "Since", "6번 · ~이후로"],
+      ["change was ____ slow ____ most people expected …", "so … that", "3번 · 원인 → 결과"]
+    ]
+  },
+  "lv4": {
+    "title": {
+      "options": [
+        "Why Ancient People Feared Rapid Technological Change",
+        "From Expecting Progress to Fearing Its Speed",
+        "How Technology Ended Economic Inequality in History",
+        "The Slow Pace of Change in Modern Daily Life",
+        "Why Innovation Has Never Been Truly Popular"
+      ],
+      "answer": 2,
+      "why": "기대(6번)에서 걱정(7번)으로. ① 옛사람은 걱정이 아니라 ‘변화 없음’을 예상(3번) ③ 경제적 불평등 언급 없음 ④ 느린 변화는 과거 이야기(3번) ⑤ 지금은 혁신을 기대함(6번)"
+    },
+    "blank": {
+      "sentence": "All that changed when changes began to occur so often that they were not only perceptible but ________.",
+      "options": ["expected", "ignored", "forgotten", "resisted", "prevented"],
+      "answer": 1,
+      "why": "6번 ‘people expect the future to bring new things’"
+    },
+    "insert": {
+      "given": 5,
+      "why": "All that = 3·4번의 옛날 상황, 뒤의 6번(Since the advent …)이 바뀐 결과"
+    }
+  },
+  "lv5": {
+    "summary": {
+      "sentence": "Technology led people to (A) ________ constant improvement, but the (B) ________ of change now makes many worry that they cannot keep up.",
+      "options": ["expect — speed", "fear — slowness", "ignore — speed", "expect — slowness", "resist — depth"],
+      "answer": 1,
+      "why": "6번 기대 / 7번 too fast"
+    },
+    "grammar": [
+      [
+        "With technology (came / coming) the idea that innovation and novelty are intrinsic …",
+        "came",
+        "도치: 주어 the idea가 뒤로 → 동사 자리"
+      ],
+      [
+        "… hard to understand that this state of affairs (wasn’t / weren’t) the rule …",
+        "wasn’t",
+        "주어 this state of affairs는 단수"
+      ],
+      ["… most people expected the future (to be / being) much like the past.", "to be", "expect + O + to V"],
+      [
+        "… so often that they were not only perceptible but (expected / expecting).",
+        "expected",
+        "변화는 ‘기대되는’ 것 → 수동, perceptible과 짝(형용사 자리)"
+      ],
+      [
+        "… too profound, for normal people (to assimilate / assimilating) them.",
+        "to assimilate",
+        "too ~ for 의미상 주어 to V"
+      ]
+    ],
+    "vocab": [
+      [
+        "Constant changes are so (ingrained / ignored) in our daily lives that …",
+        "ingrained",
+        "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"
+      ],
+      ["… changes were not only (perceptible / imperceptible) but expected.", "perceptible", "기대될 만큼 잦아졌다 → 느낄 수 있는"],
+      ["Since the (advent / adventure) of technology, …", "advent", "기술의 ‘출현’ 이후"]
+    ],
+    "para": [
+      [
+        "Since the arrival of technology, people anticipate that the future will bring new things to better their daily lives.",
+        6,
+        "arrival ← advent / anticipate ← expect / better ← improve"
+      ],
+      [
+        "Many of us now worry that the changes may be too deep for ordinary people to absorb.",
+        7,
+        "worry ← fear / deep ← profound / ordinary ← normal / absorb ← assimilate"
+      ],
+      [
+        "Ongoing changes are so deeply rooted in our lives that it is difficult to believe things were different long ago.",
+        2,
+        "Ongoing ← Constant / deeply rooted ← ingrained"
+      ],
+      [
+        "Everything was different once changes became so frequent that people could notice and even anticipate them.",
+        5,
+        "Everything was different ← All that changed / could notice ← perceptible / anticipate ← expect"
+      ]
+    ]
+  },
+  "wrap": {
+    "easy": [
+      ["주장", "기술이 생기면서 ‘새로운 것이 계속 나오는 게 당연하다’는 생각이 생겼다."],
+      ["대조", "지금은 변화가 너무 익숙해서, 옛날엔 그렇지 않았다는 게 잘 상상이 안 된다."],
+      ["과거", "몇백 년 전에는 세상이 아주 천천히 바뀌어서 ‘내일도 어제랑 비슷하겠지’ 하고 생각했다."],
+      ["강조", "그래서 ‘미래가 더 좋아질 거야’라는 생각은 흔하지도 않았고, 인기는 더더욱 없었다."],
+      ["전환점", "그런데 변화가 자꾸 일어나자, 사람들이 변화를 느끼고 오히려 기다리게 되었다."],
+      ["결과", "그래서 기술이 생긴 뒤로 사람들은 ‘미래엔 내 생활을 편하게 해 줄 새 물건이 나오겠지’ 하고 기대한다."],
+      ["반전", "하지만 요즘은 ‘변화가 너무 빠르고 커서 보통 사람은 못 따라가면 어쩌지?’ 하고 걱정한다."]
+    ],
+    "topicEn": "the shift from expecting technological change to fearing its speed",
+    "topicKo": "기술 변화를 기대하던 데서 그 속도를 걱정하게 된 변화",
+    "titleEn": "From Expecting Progress to Fearing Its Speed",
+    "titleKo": "발전을 기대하던 데서 그 속도를 두려워하기까지",
+    "oneLine": "기술 덕분에 변화를 __기대__하게 됐지만, 이제는 변화가 __너무 빨라__ 걱정이다."
+  }
+}
