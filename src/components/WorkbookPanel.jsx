@@ -9,7 +9,7 @@ function loadParts() {
     const v = JSON.parse(localStorage.getItem(PARTS_KEY))
     if (Array.isArray(v)) return v.filter((id) => PARTS.some((p) => p.id === id))
   } catch {}
-  return [...BASE_PARTS, 'summary']
+  return [...BASE_PARTS]
 }
 
 // 지문 완전정복 워크북 — 고른 구성만 AI로 받고, 선생님이 고른 모양 그대로 미리보기 · 인쇄
@@ -72,7 +72,7 @@ export default function WorkbookPanel({ passage, title, level, modelId, modelLab
         {PARTS.map((p, i) => (
           <label key={p.id} className={`workbook-part ${parts.includes(p.id) ? 'on' : ''}`}>
             <input type="checkbox" checked={parts.includes(p.id)} onChange={() => toggle(p.id)} disabled={busy} />
-            <span className="wp-name"><b>{i + 1}</b>{p.name}{p.id === 'summary' && <em>새로</em>}</span>
+            <span className="wp-name"><b>{i + 1}</b>{p.name}</span>
             <span className="wp-desc">{p.desc}</span>
           </label>
         ))}

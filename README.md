@@ -64,9 +64,8 @@ vercel env add VITE_ANTHROPIC_API_KEY
 | 7 | 수능형 문제 (빈칸/어법/선택/순서배열) |
 | 8 | 어법 Final 종합 문제지 |
 
-- **📘 지문 완전정복 워크북** (단일 지문): AI를 한 번만 불러 A4 4쪽 워크북 — 1쪽 문장 뜯어보기(영어 · 해석·논리·어법 · 단어/동의어/반의어 뜻) · 2쪽 흐름 지도 + Lv1~4 · 3쪽 Lv5 + 쉬운 말로 다시 읽기 · 4쪽 정답. 모양은 `src/workbook/workbook.js`(원본: cm-variant `public/lib/workbook.js`, 견본 `src/workbook/sample.json`), 내용 지시문은 `src/workbook/generate.js`. 문장 나누기 · 선지 정답 자리 · 문장 넣기 자리는 코드가 정하고, 모양에 안 맞는 답은 한 번 더 받음. 만든 뒤 비용(원)을 화면에 보여 줌
-- **워크북 구성 고르기**: 문장 뜯어보기 · 흐름 지도 · Lv1~3 기본 · Lv4~5 수능·변형 · 쉬운 말로 다시 읽기 · **종합 한 장** 중 체크한 것만 만듦 (고른 것은 브라우저에 기억). 고른 칸만 AI에게 쓰게 해서 적게 고르면 비용도 줄어듦. 구성 목록은 `src/workbook/workbook.js`의 `PARTS`
-- **종합 한 장 (Summary)**: 지문 한 장에 어법·어휘 괄호 · 첫 글자 빈칸 · 지칭 · 배열(주제문 + 핵심 구문), ✂ 접는 선 아래는 지문을 가리고 글의 순서 카드 · 주제/제목 낱말 배열 · 요약 (A)(B)(C) · 핵심 질문 영작. 번호 · 괄호 순서 · 낱말 섞기(문장부호·첫 대문자 뗌)는 코드가, 어법 설명은 정답 쪽에만. 같은 어법 포인트 2번까지, 빈칸은 지문에 한 번만 나오는 내용어 등은 `checkSummary`가 검사하고 어긋나면 한 번 더 받음. 모양 `src/workbook/workbook-summary.js`(원본: cm-variant `public/lib/workbook-summary.js`), 견본 `src/workbook/summary-sample.json`
+- **📘 지문 완전정복 워크북** (단일 지문, 5-B 어법 [ ] · 5-C 어휘 〈 〉는 지문 전체에 촘촘하게): AI를 한 번만 불러 A4 4쪽 워크북 — 1쪽 문장 뜯어보기(영어 · 해석·논리·어법 · 단어/동의어/반의어 뜻) · 2쪽 흐름 지도 + Lv1~4 · 3쪽 Lv5 + 쉬운 말로 다시 읽기 · 4쪽 정답. 모양은 `src/workbook/workbook.js`(원본: cm-variant `public/lib/workbook.js`, 견본 `src/workbook/sample.json`), 내용 지시문은 `src/workbook/generate.js`. 문장 나누기 · 선지 정답 자리 · 문장 넣기 자리는 코드가 정하고, 모양에 안 맞는 답은 한 번 더 받음. 만든 뒤 비용(원)을 화면에 보여 줌
+- **워크북 구성 고르기**: 문장 뜯어보기 · 흐름 지도 · Lv1~3 기본 · Lv4~5 수능·변형 · 쉬운 말로 다시 읽기 중 체크한 것만 만듦 (고른 것은 브라우저에 기억). 고른 칸만 AI에게 쓰게 해서 적게 고르면 비용도 줄어듦. 구성 목록은 `src/workbook/workbook.js`의 `PARTS`
 - **Stage 선택** (구버전): 원하는 Stage만 체크해서 생성
 - **인쇄/PDF**: 교사용 정답은 맨 마지막 페이지에 자동 배치
 - **잉크 절약**: 흰 배경, 점선 테두리, 최소 음영

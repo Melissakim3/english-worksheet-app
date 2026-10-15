@@ -3,12 +3,23 @@
 //   1쪽 STAGE 1 문장 뜯어보기 · 2쪽 STAGE 2 흐름 지도 + Lv1~4 · 3쪽 Lv5 + 쉬운 말로 다시 읽기 · 4쪽 정답
 //   모양(칸 비율·글꼴·색·순서)은 여기서만 정하고, 지문마다 바뀌는 내용은 워크북.json으로 받음 (모양 설명: docs/workbook.md)
 //   번호(문장 번호, 선지 ①~⑤, 끼울 자리)는 코드가 붙이고, json에는 글만 둠
-import { checkSummary, summaryHtml, summaryAnswers, SUMMARY_CSS, findIn, seeded } from './workbook-summary.js';
-
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // __밑줄__ → <u>밑줄</u> (요약 상자·한 줄 요지에서 핵심어 표시)
 const marked = (s) => esc(s).replace(/__(.+?)__/g, '<u>$1</u>');
 const CIRCLE = ['①', '②', '③', '④', '⑤'];
+// 같은 지문이면 늘 같은 자리 (generate.js와 같은 방식)
+function seeded(seed) {
+  let h = 2166136261;
+  for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
+}
+// 낱말 경계로 찾기 (대소문자 그대로) → [시작, 끝] 또는 null
+export function findIn(sentence, target) {
+  const t = String(target ?? '').replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  const m = new RegExp(`(?<![A-Za-z’'])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z])`).exec(sentence);
+  return m ? [m.index, m.index + t.length] : null;
+}
 const FLOW_COLORS = ['#e8c547', '#5bb974', '#e8829a', '#5b9bd5', '#a07cc5', '#e39b4f', '#4fb3b3'];
 
 // 워크북 구성 — 선생님이 골라서 만듦 (keys = 그 부분에 필요한 json 칸). 고르지 않으면 BASE 다섯 개 (원래 4쪽 워크북)
@@ -18,7 +29,6 @@ export const PARTS = [
   { id: 'basic', name: 'Lv1~3 기본', keys: ['lv1', 'lv2', 'lv3'], desc: '단어 · 내용 O/X · 지칭 · 쉬운 말↔원문 · 흐름 3계단 · 문장 역할 · 연결어' },
   { id: 'exam', name: 'Lv4~5 수능·변형', keys: ['lv4', 'lv5'], desc: '지문 가리고: 제목 · 빈칸 · 문장 넣기 · 요약문 · 어법 · 어휘 · 바뀐 문장' },
   { id: 'wrap', name: '쉬운 말로 다시 읽기', keys: ['wrap'], desc: '1번부터 쉬운 말로 소리 내어 읽기 + 주제 · 제목 영어/한글 + 한 줄 요지' },
-  { id: 'summary', name: '종합 한 장', keys: ['summary'], desc: '지문에 어법·어휘 괄호 · 첫 글자 빈칸 · 지칭 · 배열 → 접어서 순서 · 주제/제목 배열 · 요약 · 핵심 질문 영작' },
 ];
 export const BASE_PARTS = ['study', 'flow', 'basic', 'exam', 'wrap'];
 
@@ -76,7 +86,6 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
     if ((d?.wrap?.easy || []).length !== n) errs.push(`쉬운 말로 다시 읽기: 문장 ${n}개마다 하나씩`);
     for (const k of ['topicEn', 'topicKo', 'titleEn', 'titleKo', 'oneLine']) if (!d?.wrap?.[k]) errs.push(`wrap.${k} 없음`);
   }
-  if (has('summary') && n) errs.push(...checkSummary(d).map((e) => `종합: ${e}`));
   return errs;
 }
 
@@ -289,28 +298,25 @@ ${A('5-C', grammarInPassage(lv5.vocab)
     ? grammarPassage(d).vocab.map((m) => `<span>${m.no} <b>${esc(m.target)}</b> ${esc(m.why)}</span>`).join('')
     : AL(lv5.vocab.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
 ${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}`;
-  const summary = () => `
-<div class="k sm-k">종합</div><div class="v sm-k"><span>${esc(d.title)} 종합(Summary)</span></div>
-${summaryAnswers(d).map(([k, v]) => A(k, v)).join('\n')}`;
-  const rows = (has('basic') ? basic() : '') + (has('exam') ? exam() : '') + (has('summary') ? summary() : '');
+  const rows = (has('basic') ? basic() : '') + (has('exam') ? exam() : '');
   if (!rows) return '';
   return `
 <section class="answers-start"><div class="wb">
 <div class="w-lv"><span>정답</span><i>${esc(d.title)}</i></div>
-<div class="w-ans${has('summary') && (has('basic') || has('exam')) ? ' tight' : ''}">${rows}
+<div class="w-ans">${rows}
 </div></div></section>`;
 }
 
 // 글꼴: 기본은 Google Fonts (Noto Sans KR · Source Serif 4). 인터넷이 막힌 곳은 fontCss로 @font-face를 직접 넣음
 export const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap">';
 
-//   parts: 넣을 구성 (안 주면 원래 4쪽 + json에 summary가 있으면 종합 한 장도)
+//   parts: 넣을 구성 (안 주면 원래 4쪽)
 export function workbookHtml(d, { fontCss = '', parts } = {}) {
-  parts = parts || [...BASE_PARTS, ...(d?.summary ? ['summary'] : [])];
+  parts = parts || BASE_PARTS;
   const has = (p) => parts.includes(p);
   const errs = checkWorkbook(d, parts);
   if (errs.length) throw new Error(`워크북 내용 확인:\n- ${errs.join('\n- ')}`);
-  // 앞쪽(문장 뜯어보기 → 흐름 지도 → 문제)은 이어서, 종합 한 장과 정답은 새 쪽에서
+  // 문장 뜯어보기 → 흐름 지도 → 문제는 이어서, 정답은 새 쪽에서
   const front = [
     has('study') && studyPage(d),
     has('flow') && flowPage(d),
@@ -318,13 +324,11 @@ export function workbookHtml(d, { fontCss = '', parts } = {}) {
   ].filter(Boolean);
   // 문장 뜯어보기 뒤에 다른 것이 오면 쪽을 넘김
   const frontHtml = front.length ? `<section>${front.map((h, i) => (i === 0 && has('study') && front.length > 1 ? `${h}\n<div class="pb"></div>` : h)).join('')}</section>` : '';
-  const summary = has('summary') ? `<section class="${frontHtml ? 'answers-start' : ''}">${summaryHtml(d)}</section>` : '';
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(d.title)} 워크북</title>${fontCss ? '' : FONT_LINK}<style>
 ${fontCss}
 ${WORKBOOK_CSS}
-${has('summary') ? SUMMARY_CSS : ''}
 </style></head><body>
-${frontHtml}${summary}${answerPage(d, has)}</body></html>`;
+${frontHtml}${answerPage(d, has)}</body></html>`;
 }
 
 export const WORKBOOK_CSS = `
@@ -402,12 +406,6 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v{padding:5px 0px;border-bottom:0.5px solid #e4e4e4;line-height:1.6}
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
-/* 워크북 + 종합을 같이 고르면 답 쪽을 한 쪽에: 글씨·간격을 조금 줄임 */
-.w-ans.tight{font-size:6.9pt;line-height:1.4}
-.w-ans.tight .k,.w-ans.tight .v{padding:2.4px 0px;line-height:1.4}
-.w-ans.tight .k{font-size:7pt}
-.w-ans.tight .v span{margin-right:10px}
-.w-ans .sm-k{border-top:1.2px solid #111111;margin-top:6px;font-weight:700}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#999999}
