@@ -402,7 +402,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v{padding:5px 0px;border-bottom:0.5px solid #e4e4e4;line-height:1.6}
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
-/* 워크북 + 종합 정답을 한 쪽에: 글씨·간격을 조금 줄임 */
+/* 워크북 + 종합을 같이 고르면 답 쪽을 한 쪽에: 글씨·간격을 조금 줄임 */
 .w-ans.tight{font-size:6.9pt;line-height:1.4}
 .w-ans.tight .k,.w-ans.tight .v{padding:2.4px 0px;line-height:1.4}
 .w-ans.tight .k{font-size:7pt}
