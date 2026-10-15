@@ -311,13 +311,10 @@
       {"s": 7, "target": "to assimilate", "wrong": "assimilating", "point": "too ~ to V", "why": "too ~ for 의미상 주어 to V (너무 ~해서 …가 ~할 수 없다)"}
     ],
     "vocab": [
-      [
-        "Constant changes are so (ingrained / ignored) in our daily lives that …",
-        "ingrained",
-        "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"
-      ],
-      ["… changes were not only (perceptible / imperceptible) but expected.", "perceptible", "기대될 만큼 잦아졌다 → 느낄 수 있는"],
-      ["Since the (advent / adventure) of technology, …", "advent", "기술의 ‘출현’ 이후"]
+      {"s": 2, "target": "ingrained", "wrong": "ignored", "why": "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"},
+      {"s": 4, "target": "common", "wrong": "rare", "why": "옛날엔 미래가 나아진다는 생각이 흔하지 않았음 (never common, much less popular)"},
+      {"s": 6, "target": "advent", "wrong": "adventure", "why": "기술의 '출현' 이후"},
+      {"s": 7, "target": "fear", "wrong": "hope", "why": "However로 앞의 기대와 반대 → 두려워함"}
     ],
     "para": [
       [

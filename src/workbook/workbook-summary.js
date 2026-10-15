@@ -6,6 +6,7 @@
 //   - 어법 설명 · 해석은 정답 쪽에만 (학생 쪽에 답이 새지 않게), 요약문에는 한글 해석을 안 붙임
 //   - 같은 어법 포인트는 2번까지, 빈칸은 지문에 한 번만 나오는 내용어만
 //   - 순서는 단락을 가리고 카드로 (카드 묶음이 1번 문장부터 끝까지 빠짐없이)
+//   - 2단으로 촘촘하게, 마지막 요약 · 핵심 질문은 가로 전체에 크게 (선생님이 워크북에서 가장 마음에 든 점)
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const REF = ['❶', '❷', '❸', '❹', '❺'];
 const LABEL = ['A', 'B', 'C', 'D', 'E'];
@@ -246,11 +247,14 @@ export function summaryHtml(d) {
 <div class="sm">
 <div class="sm-head">${esc(d.title)}　종합(Summary)</div>
 <div class="sm-guide">■ 괄호 [ ] 안에서 알맞은 것을 고르고, 첫 글자 빈칸을 채우고, [배열] 문장은 [ ] 안 낱말을 배열해 아래 줄에 쓰시오. 밑줄 친 ❶❷ 어구가 가리키는 것은 아래에 우리말로 쓰시오.</div>
+<div class="sm-cols">
 ${blocks.join('\n')}
 <div class="sm-sec">지칭 — 무엇을 가리키는지 우리말로</div>
 ${(sm.refs || []).map((r) => `<div class="sm-row"><span>${r.no} <u>${esc(r.target)}</u></span><span class="sm-fill"></span></div>`).join('')}
+</div>
 <div class="sm-fold">✂ 여기서 접어 위 지문을 가리고 아래를 푸세요</div>
-<div class="sm-sec">글의 순서 — (A)~(${LABEL[cards.length - 1]})를 글의 흐름에 맞게 배열하시오</div>
+<div class="sm-cols">
+<div class="sm-sec first">글의 순서 — (A)~(${LABEL[cards.length - 1]})를 글의 흐름에 맞게 배열하시오</div>
 <div class="sm-cards">${cards.map((c) => `<div><b>(${c.label})</b> ${esc(c.card)}</div>`).join('')}</div>
 <div class="sm-ansrow">${cards.map(() => '(　　)').join(' → ')}</div>
 <div class="sm-sec">주제 · 제목 — 주어진 낱말을 모두 배열하시오</div>
@@ -258,12 +262,15 @@ ${(sm.refs || []).map((r) => `<div class="sm-row"><span>${r.no} <u>${esc(r.targe
 <div class="sm-dash">${words(sm.topic.en)}</div>
 <div class="sm-q"><b>&lt;제목&gt;</b> ${esc(sm.title.ko)}</div>
 <div class="sm-dash">${words(sm.title.en)}</div>
+</div>
+<div class="sm-wide">
 <div class="sm-sec">요약 — 지문에 나온 낱말로 (A)·(B)${sm.sum.answers.length > 2 ? '·(C)' : ''}를 채우시오 (어형 변형 가능)</div>
 <div class="sm-dash en">${sumLine}</div>
 <div class="sm-sec">이 글의 핵심 질문 — [ ] 안 낱말을 배열하여 답을 완성하시오${hasChange ? ' (필요하면 어형을 바꾸시오)' : ''}</div>
 <div class="sm-q en"><b>Q.</b> ${esc(sm.key.question)}</div>
 <div class="sm-box en">${frameHtml(sm.key.answer, rnd, proper, sm.key.changes || [])}</div>
 <div class="sm-line"></div><div class="sm-line"></div>
+</div>
 </div>`;
 }
 
@@ -289,7 +296,9 @@ export const SUMMARY_CSS = `
 .sm{font-size:8.4pt;line-height:1.55;color:#111111}
 .sm-head{background:#3a5a98;color:#ffffff;font-weight:700;font-size:10pt;text-align:right;padding:7px 12px;margin-bottom:8px}
 .sm-guide{border:1px solid #555555;border-radius:3px;padding:5px 9px;font-weight:700;font-size:7.6pt;margin-bottom:6px}
-.sm-p{font-family:"Source Serif 4", serif;font-size:8.6pt;line-height:2.05;text-align:justify;margin:4px 0px}
+.sm-cols{column-count:2;column-gap:7mm;column-rule:1px solid #dddddd}
+.sm-cols > :first-child{margin-top:0px}
+.sm-p{font-family:"Source Serif 4", serif;font-size:8.2pt;line-height:1.85;text-align:justify;margin:0px 0px 4px}
 .sm-p sup,.sm-box sup{font-size:5.6pt;color:#555555;margin-left:1px}
 .sm-ch b{font-weight:600}
 .sm-ref{font-weight:600}
@@ -301,11 +310,15 @@ export const SUMMARY_CSS = `
 .sm-ko{font-size:7.4pt;color:#444444;margin-top:2px}
 .sm-line{border-bottom:0.8px solid #9a9a9a;height:18px}
 .sm-sec{font-weight:700;font-size:8.2pt;border-top:1.2px solid #222222;padding-top:4px;margin:10px 0px 4px;break-after:avoid}
+.sm-sec.first{margin-top:0px}
+.sm-wide{margin-top:10px;break-inside:avoid}
+.sm-wide .sm-sec{font-size:9pt;border-top-width:1.6px}
+.sm-wide .sm-dash.en,.sm-wide .sm-box.en,.sm-wide .sm-q.en{font-size:9.4pt;line-height:1.9}
 .sm-row{display:flex;gap:8px;align-items:baseline;margin:3px 0px}
 .sm-row span:first-child{white-space:nowrap}
 .sm-fill{flex:1 1 auto;border-bottom:0.6px solid #9a9a9a;height:14px}
-.sm-fold{margin:12px 0px 0px;border-top:1.2px dashed #777777;text-align:center;font-size:7pt;color:#777777;padding-top:2px}
-.sm-cards{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;break-inside:avoid}
+.sm-fold{margin:10px 0px 8px;border-top:1.2px dashed #777777;text-align:center;font-size:7pt;color:#777777;padding-top:2px}
+.sm-cards{display:grid;grid-template-columns:1fr;gap:4px;break-inside:avoid}
 .sm-cards div{border:0.8px solid #9a9a9a;border-radius:3px;padding:4px 7px;font-size:7.8pt}
 .sm-ansrow{text-align:center;margin:5px 0px 2px;color:#555555}
 .sm-q{margin:4px 0px 2px;font-size:7.8pt}

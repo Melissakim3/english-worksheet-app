@@ -70,7 +70,7 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
       if (n - 1 < 6) errs.push('4-C: 주어진 문장을 뺀 뒤 6문장 이상 있어야 ①~⑤ 자리를 만듦');
     }
     (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
-    if (grammarInPassage(d?.lv5?.grammar)) checkGrammar(d, errs);
+    if (grammarInPassage(d?.lv5?.grammar) || grammarInPassage(d?.lv5?.vocab)) checkPassageMarks(d, errs);
   }
   if (has('wrap')) {
     if ((d?.wrap?.easy || []).length !== n) errs.push(`쉬운 말로 다시 읽기: 문장 ${n}개마다 하나씩`);
@@ -80,22 +80,28 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
   return errs;
 }
 
-// 5-B 어법: 지문 전체 한 번에 [ 맞는 것 / 틀린 것 ] 촘촘하게 (선생님: '…'로 잘린 문장이 별로, 자리는 적게) — 2026-10-15
-//   grammar = [{ s, target, wrong, point, why }] (target은 그 문장에 그대로 있는 말). 예전 모양 [[문장, 답, 이유]]도 그대로 읽음
+// 5-B 어법 · 5-C 어휘: 지문 전체 한 번에 어법 [ 맞는 것 / 틀린 것 ]¹ · 어휘 〈 맞는 것 / 헷갈리는 것 〉ⓐ 촘촘하게
+//   (선생님: '…'로 잘린 문장이 별로, 자리는 적게, 2단 안에) — 2026-10-15
+//   grammar = [{ s, target, wrong, point, why }] · vocab = [{ s, target, wrong, why }] (target은 그 문장에 그대로 있는 말)
+//   예전 모양 [[문장, 답, 이유]]도 그대로 읽음
 export const grammarInPassage = (g) => Array.isArray(g) && g.length > 0 && !Array.isArray(g[0]);
 // 개수 범위 · 같은 포인트 허용 수 (촘촘하면 같은 포인트가 더 나올 수밖에 없어 17개부터 3번까지)
 export const grammarRange = (n) => [Math.min(25, Math.max(5, Math.round(n * 0.8))), Math.min(40, Math.max(12, Math.round(n * 1.6)))];
 const pointLimit = (count) => (count >= 17 ? 3 : 2);
-function checkGrammar(d, errs) {
+const VOCAB_NO = 'ⓐⓑⓒⓓⓔⓕⓖⓗ';
+function checkPassageMarks(d, errs) {
   const S = d.sentences || [];
   const n = S.length;
-  const g = d.lv5?.grammar || [];
+  const gIn = grammarInPassage(d.lv5?.grammar);
+  const g = gIn ? d.lv5.grammar : [];
+  const v = grammarInPassage(d.lv5?.vocab) ? d.lv5.vocab : [];
   const [lo, hi] = grammarRange(n);
-  if (g.length < lo || g.length > hi) errs.push(`5-B: 어법 고르기는 ${lo}~${hi}개 (지금 ${g.length}개)`);
+  if (gIn && (g.length < lo || g.length > hi)) errs.push(`5-B: 어법 고르기는 ${lo}~${hi}개 (지금 ${g.length}개)`);
+  if (v.length && (v.length < 2 || v.length > 6)) errs.push(`5-C: 어휘 고르기는 2~6개 (지금 ${v.length}개)`);
   const spans = {};
   const points = {};
-  g.forEach((m, i) => {
-    const w = `5-B ${i + 1}(${m.target ?? '?'})`;
+  [...g.map((m, i) => ['5-B', m, i]), ...v.map((m, i) => ['5-C', m, i])].forEach(([q, m, i]) => {
+    const w = `${q} ${i + 1}(${m.target ?? '?'})`;
     if (!(Number.isInteger(m.s) && m.s >= 1 && m.s <= n)) return errs.push(`${w}: 문장 번호 ${m.s}가 1~${n} 밖`);
     const at = findIn(S[m.s - 1], m.target);
     if (!at) return errs.push(`${w}: "${m.target}"가 ${m.s}번 문장에 그대로 없음`);
@@ -104,34 +110,40 @@ function checkGrammar(d, errs) {
     list.push(at);
     if (!String(m.wrong || '').trim() || String(m.wrong).trim().toLowerCase() === String(m.target).trim().toLowerCase()) errs.push(`${w}: wrong(틀린 것)이 없거나 정답과 같음`);
     if (!m.why) errs.push(`${w}: why(이유) 없음`);
+    if (q === '5-C') return;
     const p = String(m.point || '').replace(/\s/g, '').toLowerCase();
     if (!p) errs.push(`${w}: point(어법 포인트) 없음`);
     else if ((points[p] = (points[p] || 0) + 1) === pointLimit(g.length) + 1) errs.push(`5-B: 어법 포인트 "${m.point}"가 ${pointLimit(g.length) + 1}번 이상 — ${pointLimit(g.length)}번까지`);
   });
-  const covered = Object.keys(spans).length;
-  if (n >= 5 && covered < Math.ceil(n * 0.7)) errs.push(`5-B: 지문 전체에 고르게 — 괄호가 있는 문장이 ${covered}개뿐 (${Math.ceil(n * 0.7)}개 이상)`);
+  const covered = new Set(g.map((m) => m.s)).size;
+  if (gIn && n >= 5 && covered < Math.ceil(n * 0.7)) errs.push(`5-B: 지문 전체에 고르게 — 괄호가 있는 문장이 ${covered}개뿐 (${Math.ceil(n * 0.7)}개 이상)`);
   if (Object.values(spans).some((l) => l.length > 3)) errs.push('5-B: 한 문장에 괄호는 3개까지');
 }
 
-// 지문 전체에 괄호 — 번호는 지문 차례대로, [맞는 것 / 틀린 것] 순서는 같은 지문이면 늘 같게. 정답 번호 붙인 목록도 돌려줌
+// 지문 전체에 괄호 — 번호는 지문 차례대로(어법 1·2·3, 어휘 ⓐⓑⓒ), 앞뒤 순서는 같은 지문이면 늘 같게. 정답 목록도 돌려줌
 export function grammarPassage(d) {
   const rnd = seeded(`${d.title}|grammar|${d.sentences.join(' ')}`);
-  let no = 0;
-  const answers = [];
+  const marks = [
+    ...(grammarInPassage(d.lv5.grammar) ? d.lv5.grammar.map((m) => ({ ...m, v: false })) : []),
+    ...(grammarInPassage(d.lv5.vocab) ? d.lv5.vocab.map((m) => ({ ...m, v: true })) : []),
+  ];
+  const grammar = [];
+  const vocab = [];
   const html = d.sentences.map((sent, i) => {
-    const items = d.lv5.grammar.filter((m) => m.s === i + 1).map((m) => ({ m, at: findIn(sent, m.target) })).sort((x, y) => x.at[0] - y.at[0]);
+    const items = marks.filter((m) => m.s === i + 1).map((m) => ({ m, at: findIn(sent, m.target) })).sort((x, y) => x.at[0] - y.at[0]);
     let out = '';
     let pos = 0;
     for (const { m, at } of items) {
       const t = sent.slice(at[0], at[1]);
-      const pair = rnd() < 0.5 ? [t, m.wrong] : [m.wrong, t];
-      answers.push({ ...m, no: ++no });
-      out += `${esc(sent.slice(pos, at[0]))}<span class="gp">[&nbsp;${esc(pair[0])} / ${esc(pair[1])}&nbsp;]<sup>${no}</sup></span>`;
+      const [a, b] = rnd() < 0.5 ? [t, m.wrong] : [m.wrong, t];
+      out += esc(sent.slice(pos, at[0]));
+      if (m.v) { const no = VOCAB_NO[vocab.length]; vocab.push({ ...m, no }); out += `<span class="gv">〈&nbsp;${esc(a)} / ${esc(b)}&nbsp;〉<sup>${no}</sup></span>`; }
+      else { const no = grammar.length + 1; grammar.push({ ...m, no }); out += `<span class="gp">[&nbsp;${esc(a)} / ${esc(b)}&nbsp;]<sup>${no}</sup></span>`; }
       pos = at[1];
     }
     return out + esc(sent.slice(pos));
   }).join(' ');
-  return { html, answers };
+  return { html, grammar, vocab, answers: grammar };
 }
 
 // 4-C 문장 넣기: 주어진 문장을 빼고, 남은 문장 사이에 ①~⑤ — 정답 자리가 주어진 문장 원래 자리와 같은지도 봄
@@ -182,6 +194,8 @@ function flowPage(d) {
 function problemPages(d, has) {
   const { lv1, lv2, lv3, lv4, lv5, wrap } = d;
   const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const gIn = has('exam') && grammarInPassage(lv5.grammar);
+  const vIn = has('exam') && grammarInPassage(lv5.vocab);
   const basic = () => `
 ${LV(1, '읽고 기억하기')}
 ${Q('1-A', '단어', '뜻을 쓰세요.')}
@@ -225,14 +239,12 @@ ${LV(5, '변형까지 대비하기', '지문을 가리고 풀기')}
 ${Q('5-A', '요약문', '(A), (B)에 들어갈 말은?')}
 ${EN(lv5.summary.sentence)}
 ${OPTS(lv5.summary.options, true)}
+${gIn || vIn ? `${Q(gIn && vIn ? '5-B · 5-C' : gIn ? '5-B' : '5-C', gIn && vIn ? '어법 · 어휘' : gIn ? '어법' : '어휘', `${gIn ? '[ ] 어법상 맞는 것' : ''}${gIn && vIn ? ' · ' : ''}${vIn ? '〈 〉 문맥에 맞는 낱말' : ''}에 ○`)}\n<div class="w-gp">${grammarPassage(d).html}</div>` : ''}
 `;
   const examFull = () => `
 <div class="w-full">
-${grammarInPassage(lv5.grammar)
-    ? `${Q('5-B', '어법', '지문 전체 — [ ] 안에서 어법상 맞는 것에 ○')}\n<div class="w-gp">${grammarPassage(d).html}</div>`
-    : `${Q('5-B', '어법', '( ) 안에서 맞는 것을 고르고, 오른쪽에 이유')}\n${LIST(lv5.grammar.map(([t]) => esc(t)), { fill: '32%', nw: true, cls: 'en' })}`}
-${Q('5-C', '어휘', '문맥에 맞는 낱말에 ○')}
-${LIST(lv5.vocab.map(([t]) => esc(t)), { nw: true, cls: 'en' })}
+${gIn ? '' : `${Q('5-B', '어법', '( ) 안에서 맞는 것을 고르고, 오른쪽에 이유')}\n${LIST(lv5.grammar.map(([t]) => esc(t)), { fill: '32%', nw: true, cls: 'en' })}`}
+${vIn ? '' : `${Q('5-C', '어휘', '문맥에 맞는 낱말에 ○')}\n${LIST(lv5.vocab.map(([t]) => esc(t)), { nw: true, cls: 'en' })}`}
 ${Q('5-D', '바뀐 문장 찾기', '원문 번호를 쓰고, 바뀐 말에 밑줄 긋고 위에 원래 말')}
 ${LIST(lv5.para.map(([t]) => esc(t)), { mark: '(　　)번', nw: true, cls: 'en tall' })}
 </div>`;
@@ -271,9 +283,11 @@ ${A('4-B', one(lv4.blank, true))}
 ${A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`)}
 ${A('5-A', one(lv5.summary, true))}
 ${A('5-B', grammarInPassage(lv5.grammar)
-    ? AL(grammarPassage(d).answers.map((m) => `<b>${esc(m.target)}</b> ${esc(m.point)} — ${esc(m.why)}`))
+    ? AL(grammarPassage(d).grammar.map((m) => `<b>${esc(m.target)}</b> ${esc(m.point)} — ${esc(m.why)}`))
     : AL(lv5.grammar.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
-${A('5-C', AL(lv5.vocab.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
+${A('5-C', grammarInPassage(lv5.vocab)
+    ? grammarPassage(d).vocab.map((m) => `<span>${m.no} <b>${esc(m.target)}</b> ${esc(m.why)}</span>`).join('')
+    : AL(lv5.vocab.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
 ${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}`;
   const summary = () => `
 <div class="k sm-k">종합</div><div class="v sm-k"><span>${esc(d.title)} 종합(Summary)</span></div>
@@ -378,6 +392,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-full .w-list.nw .x{white-space:nowrap}
 .w-gp{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.85;text-align:justify;margin:2px 0px 4px}
 .w-gp .gp{font-weight:600}
+.w-gp .gv{font-weight:600;color:#2a5d8f}
 .w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#777777;margin-left:1px}
 .w-chk{border-top:0.8px solid #111111;margin-top:14px;padding-top:1px;break-inside:avoid}
 .w-chk ol{list-style:none;padding:0px;margin:3px 0px 0px;column-count:2;column-gap:9mm}
