@@ -17,7 +17,7 @@ const STOP = new Set(('the a an and or but nor if of in on at to for with from b
 const ORDER_HINTS = ['처음', '먼저', '마지막', '결론', '끝으로', '이어서', '다음으로', '도입', '마무리', '서론', '본론'];
 
 // 같은 지문이면 늘 같은 자리 (generate.js와 같은 방식)
-function seeded(seed) {
+export function seeded(seed) {
   let h = 2166136261;
   for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;

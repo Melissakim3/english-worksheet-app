@@ -3,7 +3,7 @@
 //   1쪽 STAGE 1 문장 뜯어보기 · 2쪽 STAGE 2 흐름 지도 + Lv1~4 · 3쪽 Lv5 + 쉬운 말로 다시 읽기 · 4쪽 정답
 //   모양(칸 비율·글꼴·색·순서)은 여기서만 정하고, 지문마다 바뀌는 내용은 워크북.json으로 받음 (모양 설명: docs/workbook.md)
 //   번호(문장 번호, 선지 ①~⑤, 끼울 자리)는 코드가 붙이고, json에는 글만 둠
-import { checkSummary, summaryHtml, summaryAnswers, SUMMARY_CSS } from './workbook-summary.js';
+import { checkSummary, summaryHtml, summaryAnswers, SUMMARY_CSS, findIn, seeded } from './workbook-summary.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // __밑줄__ → <u>밑줄</u> (요약 상자·한 줄 요지에서 핵심어 표시)
@@ -70,6 +70,7 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
       if (n - 1 < 6) errs.push('4-C: 주어진 문장을 뺀 뒤 6문장 이상 있어야 ①~⑤ 자리를 만듦');
     }
     (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
+    if (grammarInPassage(d?.lv5?.grammar)) checkGrammar(d, errs);
   }
   if (has('wrap')) {
     if ((d?.wrap?.easy || []).length !== n) errs.push(`쉬운 말로 다시 읽기: 문장 ${n}개마다 하나씩`);
@@ -77,6 +78,60 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
   }
   if (has('summary') && n) errs.push(...checkSummary(d).map((e) => `종합: ${e}`));
   return errs;
+}
+
+// 5-B 어법: 지문 전체 한 번에 [ 맞는 것 / 틀린 것 ] 촘촘하게 (선생님: '…'로 잘린 문장이 별로, 자리는 적게) — 2026-10-15
+//   grammar = [{ s, target, wrong, point, why }] (target은 그 문장에 그대로 있는 말). 예전 모양 [[문장, 답, 이유]]도 그대로 읽음
+export const grammarInPassage = (g) => Array.isArray(g) && g.length > 0 && !Array.isArray(g[0]);
+// 개수 범위 · 같은 포인트 허용 수 (촘촘하면 같은 포인트가 더 나올 수밖에 없어 17개부터 3번까지)
+export const grammarRange = (n) => [Math.min(25, Math.max(5, Math.round(n * 0.8))), Math.min(40, Math.max(12, Math.round(n * 1.6)))];
+const pointLimit = (count) => (count >= 17 ? 3 : 2);
+function checkGrammar(d, errs) {
+  const S = d.sentences || [];
+  const n = S.length;
+  const g = d.lv5?.grammar || [];
+  const [lo, hi] = grammarRange(n);
+  if (g.length < lo || g.length > hi) errs.push(`5-B: 어법 고르기는 ${lo}~${hi}개 (지금 ${g.length}개)`);
+  const spans = {};
+  const points = {};
+  g.forEach((m, i) => {
+    const w = `5-B ${i + 1}(${m.target ?? '?'})`;
+    if (!(Number.isInteger(m.s) && m.s >= 1 && m.s <= n)) return errs.push(`${w}: 문장 번호 ${m.s}가 1~${n} 밖`);
+    const at = findIn(S[m.s - 1], m.target);
+    if (!at) return errs.push(`${w}: "${m.target}"가 ${m.s}번 문장에 그대로 없음`);
+    const list = (spans[m.s] ||= []);
+    if (list.some(([a, b]) => at[0] < b && a < at[1])) errs.push(`${w}: ${m.s}번 문장에서 다른 괄호와 겹침`);
+    list.push(at);
+    if (!String(m.wrong || '').trim() || String(m.wrong).trim().toLowerCase() === String(m.target).trim().toLowerCase()) errs.push(`${w}: wrong(틀린 것)이 없거나 정답과 같음`);
+    if (!m.why) errs.push(`${w}: why(이유) 없음`);
+    const p = String(m.point || '').replace(/\s/g, '').toLowerCase();
+    if (!p) errs.push(`${w}: point(어법 포인트) 없음`);
+    else if ((points[p] = (points[p] || 0) + 1) === pointLimit(g.length) + 1) errs.push(`5-B: 어법 포인트 "${m.point}"가 ${pointLimit(g.length) + 1}번 이상 — ${pointLimit(g.length)}번까지`);
+  });
+  const covered = Object.keys(spans).length;
+  if (n >= 5 && covered < Math.ceil(n * 0.7)) errs.push(`5-B: 지문 전체에 고르게 — 괄호가 있는 문장이 ${covered}개뿐 (${Math.ceil(n * 0.7)}개 이상)`);
+  if (Object.values(spans).some((l) => l.length > 3)) errs.push('5-B: 한 문장에 괄호는 3개까지');
+}
+
+// 지문 전체에 괄호 — 번호는 지문 차례대로, [맞는 것 / 틀린 것] 순서는 같은 지문이면 늘 같게. 정답 번호 붙인 목록도 돌려줌
+export function grammarPassage(d) {
+  const rnd = seeded(`${d.title}|grammar|${d.sentences.join(' ')}`);
+  let no = 0;
+  const answers = [];
+  const html = d.sentences.map((sent, i) => {
+    const items = d.lv5.grammar.filter((m) => m.s === i + 1).map((m) => ({ m, at: findIn(sent, m.target) })).sort((x, y) => x.at[0] - y.at[0]);
+    let out = '';
+    let pos = 0;
+    for (const { m, at } of items) {
+      const t = sent.slice(at[0], at[1]);
+      const pair = rnd() < 0.5 ? [t, m.wrong] : [m.wrong, t];
+      answers.push({ ...m, no: ++no });
+      out += `${esc(sent.slice(pos, at[0]))}<span class="gp">[&nbsp;${esc(pair[0])} / ${esc(pair[1])}&nbsp;]<sup>${no}</sup></span>`;
+      pos = at[1];
+    }
+    return out + esc(sent.slice(pos));
+  }).join(' ');
+  return { html, answers };
 }
 
 // 4-C 문장 넣기: 주어진 문장을 빼고, 남은 문장 사이에 ①~⑤ — 정답 자리가 주어진 문장 원래 자리와 같은지도 봄
@@ -173,8 +228,9 @@ ${OPTS(lv5.summary.options, true)}
 `;
   const examFull = () => `
 <div class="w-full">
-${Q('5-B', '어법', '( ) 안에서 맞는 것을 고르고, 오른쪽에 이유')}
-${LIST(lv5.grammar.map(([t]) => esc(t)), { fill: '32%', nw: true, cls: 'en' })}
+${grammarInPassage(lv5.grammar)
+    ? `${Q('5-B', '어법', '지문 전체 — [ ] 안에서 어법상 맞는 것에 ○')}\n<div class="w-gp">${grammarPassage(d).html}</div>`
+    : `${Q('5-B', '어법', '( ) 안에서 맞는 것을 고르고, 오른쪽에 이유')}\n${LIST(lv5.grammar.map(([t]) => esc(t)), { fill: '32%', nw: true, cls: 'en' })}`}
 ${Q('5-C', '어휘', '문맥에 맞는 낱말에 ○')}
 ${LIST(lv5.vocab.map(([t]) => esc(t)), { nw: true, cls: 'en' })}
 ${Q('5-D', '바뀐 문장 찾기', '원문 번호를 쓰고, 바뀐 말에 밑줄 긋고 위에 원래 말')}
@@ -214,7 +270,9 @@ ${A('4-A', one(lv4.title))}
 ${A('4-B', one(lv4.blank, true))}
 ${A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`)}
 ${A('5-A', one(lv5.summary, true))}
-${A('5-B', AL(lv5.grammar.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
+${A('5-B', grammarInPassage(lv5.grammar)
+    ? AL(grammarPassage(d).answers.map((m) => `<b>${esc(m.target)}</b> ${esc(m.point)} — ${esc(m.why)}`))
+    : AL(lv5.grammar.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
 ${A('5-C', AL(lv5.vocab.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
 ${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}`;
   const summary = () => `
@@ -318,6 +376,9 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-full .w-list li{padding:2.6px 0px}
 .w-full .w-list.tall li{padding:8px 0px 1px}
 .w-full .w-list.nw .x{white-space:nowrap}
+.w-gp{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.85;text-align:justify;margin:2px 0px 4px}
+.w-gp .gp{font-weight:600}
+.w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#777777;margin-left:1px}
 .w-chk{border-top:0.8px solid #111111;margin-top:14px;padding-top:1px;break-inside:avoid}
 .w-chk ol{list-style:none;padding:0px;margin:3px 0px 0px;column-count:2;column-gap:9mm}
 .w-chk li{font-size:7pt;padding:2px 0px;break-inside:avoid;display:flex;gap:6px}
