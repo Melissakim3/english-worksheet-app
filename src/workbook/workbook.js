@@ -297,7 +297,7 @@ ${summaryAnswers(d).map(([k, v]) => A(k, v)).join('\n')}`;
   return `
 <section class="answers-start"><div class="wb">
 <div class="w-lv"><span>정답</span><i>${esc(d.title)}</i></div>
-<div class="w-ans">${rows}
+<div class="w-ans${has('summary') && (has('basic') || has('exam')) ? ' tight' : ''}">${rows}
 </div></div></section>`;
 }
 
@@ -402,6 +402,11 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v{padding:5px 0px;border-bottom:0.5px solid #e4e4e4;line-height:1.6}
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
+/* 워크북 + 종합 정답을 한 쪽에: 글씨·간격을 조금 줄임 */
+.w-ans.tight{font-size:6.9pt;line-height:1.4}
+.w-ans.tight .k,.w-ans.tight .v{padding:2.4px 0px;line-height:1.4}
+.w-ans.tight .k{font-size:7pt}
+.w-ans.tight .v span{margin-right:10px}
 .w-ans .sm-k{border-top:1.2px solid #111111;margin-top:6px;font-weight:700}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
