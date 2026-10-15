@@ -1,0 +1,37 @@
+{
+  "summary": {
+    "marks": [
+      { "s": 1, "type": "어법", "target": "came", "wrong": "coming", "point": "부사구 도치", "why": "With technology(부사구)가 앞으로 나와 동사 came이 주어 the idea 앞에 옴 — 문장의 동사 자리" },
+      { "s": 1, "type": "어법", "target": "that", "wrong": "which", "point": "동격 that", "why": "the idea의 내용을 말하는 동격절, 뒤가 완전한 문장" },
+      { "s": 1, "type": "빈칸", "target": "intrinsic", "why": "본질적인 (= inherent)" },
+      { "s": 2, "type": "어법", "target": "Constant", "wrong": "Constantly", "point": "형용사·부사", "why": "명사 changes를 꾸미므로 형용사" },
+      { "s": 2, "type": "빈칸", "target": "ingrained", "why": "깊이 배어 있는" },
+            { "s": 4, "type": "어법", "target": "much less", "wrong": "much more", "point": "much less (부정 뒤 ~는 말할 것도 없이)", "why": "앞이 never(부정)이므로 much less" },
+      { "s": 4, "type": "어휘", "target": "common", "wrong": "rare", "why": "옛날에는 미래가 나아진다는 생각이 흔하지 않았음 (never common)" },
+      { "s": 5, "type": "어법", "target": "changed", "wrong": "was changed", "point": "자동사는 수동태 X", "why": "change(바뀌다)는 여기서 목적어 없는 자동사" },
+      { "s": 5, "type": "어법", "target": "perceptible", "wrong": "perceptibly", "point": "not only A but B 병렬", "why": "be동사 보어 자리, but 뒤 expected와 나란히 형용사" },
+      { "s": 6, "type": "어법", "target": "to bring", "wrong": "bringing", "point": "expect + 목적어 + to V", "why": "expect는 목적격 보어로 to부정사" },
+      { "s": 6, "type": "빈칸", "target": "advent", "why": "출현, 등장" },
+      { "s": 6, "type": "어휘", "target": "improve", "wrong": "threaten", "why": "기술이 생긴 뒤 사람들은 미래가 삶을 낫게 할 거라 기대함 (expect와 어울림)" }
+    ],
+    "refs": [
+      { "s": 2, "target": "this state of affairs", "answer": "기술·사회·경제가 끊임없이 변하는 지금의 상황" },
+      { "s": 5, "target": "All that", "answer": "변화가 느려서 미래가 나아질 거라 기대하지 않던 옛날 상황 (3·4번)" },
+      { "s": 5, "target": "they", "answer": "changes (변화들)" }
+    ],
+    "arrange": [
+      { "s": 3, "kind": "배열", "frame": "A few hundred years ago, change was {so slow that most people expected} the future {to be much like the past.}", "ko": "몇백 년 전에는 변화가 너무 느려서 대부분의 사람들은 미래가 과거와 많이 비슷할 것이라 여겼다.", "why": "so ~ that 결과 / expect + 목적어 + to V" },
+      { "s": 7, "kind": "주제문 서술형", "frame": "However, many of us now fear that {the changes may come too fast,} and may be too profound, {for normal people to assimilate them.}", "ko": "하지만 이제 우리 중 많은 이들은 변화가 너무 빨리, 너무 깊게 와서 보통 사람들이 받아들이지 못할까 두려워한다.", "why": "too ~ for 의미상 주어 to V (너무 ~해서 …가 ~할 수 없다)" }
+    ],
+    "order": [
+      { "s": [1], "card": "기술과 함께 혁신과 새로움이 문명의 본질이라는 생각이 생김" },
+      { "s": [2, 3, 4], "card": "몇백 년 전에는 변화가 느려 미래가 과거와 같을 거라 여김" },
+      { "s": [5, 6], "card": "변화가 잦아지자 미래가 삶을 낫게 할 거라 기대함" },
+      { "s": [7], "card": "그러나 지금은 변화가 너무 빠르고 깊을까 두려워함" }
+    ],
+    "topic": { "en": "the shift from expecting change to fearing its speed", "ko": "변화를 기대하던 데서 그 속도를 두려워하는 데로의 바뀜" },
+    "title": { "en": "From Expecting Progress to Fearing Its Speed", "ko": "발전을 기대하던 데서 그 속도를 두려워하기까지" },
+    "sum": { "sentence": "People once expected little (A), but now many of them (B) that it may come too fast.", "answers": ["change", "fear"], "why": "(A) 3번 change was so slow (B) 7번 many of us now fear" },
+    "key": { "question": "How has people's attitude toward change shifted over time?", "answer": "{People who once expected} the future {to be like the past} now {fear that change may} come too fast.", "changes": [["expected", "expect"]], "ko": "한때 미래가 과거와 같을 거라 여겼던 사람들이 이제는 변화가 너무 빨리 올까 두려워한다." }
+  }
+}

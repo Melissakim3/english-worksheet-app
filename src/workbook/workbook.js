@@ -3,15 +3,30 @@
 //   1쪽 STAGE 1 문장 뜯어보기 · 2쪽 STAGE 2 흐름 지도 + Lv1~4 · 3쪽 Lv5 + 쉬운 말로 다시 읽기 · 4쪽 정답
 //   모양(칸 비율·글꼴·색·순서)은 여기서만 정하고, 지문마다 바뀌는 내용은 워크북.json으로 받음 (모양 설명: docs/workbook.md)
 //   번호(문장 번호, 선지 ①~⑤, 끼울 자리)는 코드가 붙이고, json에는 글만 둠
+import { checkSummary, summaryHtml, summaryAnswers, SUMMARY_CSS } from './workbook-summary.js';
+
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // __밑줄__ → <u>밑줄</u> (요약 상자·한 줄 요지에서 핵심어 표시)
 const marked = (s) => esc(s).replace(/__(.+?)__/g, '<u>$1</u>');
 const CIRCLE = ['①', '②', '③', '④', '⑤'];
 const FLOW_COLORS = ['#e8c547', '#5bb974', '#e8829a', '#5b9bd5', '#a07cc5', '#e39b4f', '#4fb3b3'];
 
+// 워크북 구성 — 선생님이 골라서 만듦 (keys = 그 부분에 필요한 json 칸). 고르지 않으면 BASE 다섯 개 (원래 4쪽 워크북)
+export const PARTS = [
+  { id: 'study', name: '문장 뜯어보기', keys: ['study'], desc: '문장마다 해석 · 논리 꼬리표 · 어법 · 단어/동의어/반의어' },
+  { id: 'flow', name: '흐름 지도', keys: ['flow', 'core'], desc: '흐름 단계별 문장 묶음 + 주제 · 요지 · 핵심 대조' },
+  { id: 'basic', name: 'Lv1~3 기본', keys: ['lv1', 'lv2', 'lv3'], desc: '단어 · 내용 O/X · 지칭 · 쉬운 말↔원문 · 흐름 3계단 · 문장 역할 · 연결어' },
+  { id: 'exam', name: 'Lv4~5 수능·변형', keys: ['lv4', 'lv5'], desc: '지문 가리고: 제목 · 빈칸 · 문장 넣기 · 요약문 · 어법 · 어휘 · 바뀐 문장' },
+  { id: 'wrap', name: '쉬운 말로 다시 읽기', keys: ['wrap'], desc: '1번부터 쉬운 말로 소리 내어 읽기 + 주제 · 제목 영어/한글 + 한 줄 요지' },
+  { id: 'summary', name: '종합 한 장', keys: ['summary'], desc: '지문에 어법·어휘 괄호 · 첫 글자 빈칸 · 지칭 · 배열 → 접어서 순서 · 주제/제목 배열 · 요약 · 핵심 질문 영작' },
+];
+export const BASE_PARTS = ['study', 'flow', 'basic', 'exam', 'wrap'];
+
 // 내용이 모양에 맞는지 먼저 봄 — 틀린 곳을 모두 모아 알려 줌 (빈 배열이면 통과)
-export function checkWorkbook(d) {
+//   parts: 고른 구성만 검사 (안 주면 BASE_PARTS)
+export function checkWorkbook(d, parts = BASE_PARTS) {
   const errs = [];
+  const has = (p) => parts.includes(p);
   const n = d?.sentences?.length || 0;
   const inRange = (k, where) => { if (!(Number.isInteger(k) && k >= 1 && k <= n)) errs.push(`${where}: 문장 번호 ${k}가 1~${n} 밖`); };
   const five = (q, where) => {
@@ -21,34 +36,46 @@ export function checkWorkbook(d) {
   };
   if (!d?.title) errs.push('title: 지문 이름 없음');
   if (!n) errs.push('sentences: 영어 문장 없음');
-  if (d?.study?.length !== n) errs.push(`study: 문장 ${n}개마다 하나씩 (지금 ${d?.study?.length ?? 0}개)`);
-  (d?.study || []).forEach((s, i) => {
-    for (const k of ['ko', 'tag', 'logic', 'grammar']) if (!s[k]) errs.push(`study ${i + 1}번: ${k} 없음`);
-    for (const w of s.words || []) {
-      if (!w.en || !w.ko) errs.push(`study ${i + 1}번: 단어와 뜻을 모두`);
-      for (const [en, ko] of [...(w.syn || []), ...(w.ant || [])]) if (!en || !ko) errs.push(`study ${i + 1}번 ${w.en}: 동·반의어마다 뜻을 꼭 (${en || '?'})`);
-    }
-  });
-  const seen = (d?.flow || []).flatMap((f) => f.s || []);
-  seen.forEach((k) => inRange(k, 'flow'));
-  if (seen.length !== n || new Set(seen).size !== n) errs.push('flow: 모든 문장이 한 번씩 들어가야 함');
-  (d?.lv1?.ox || []).forEach(([, a, k], i) => { if (!['O', 'X'].includes(a)) errs.push(`1-B ${i + 1}: 답은 O 또는 X`); inRange(k, `1-B ${i + 1}`); });
-  (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
-  if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
-  if ((d?.lv3?.order || []).length !== (d?.lv3?.cards || []).length) errs.push('3-A: 순서와 카드 개수가 다름');
-  five(d?.lv4?.title, '4-A');
-  five(d?.lv4?.blank, '4-B');
-  five(d?.lv5?.summary, '5-A');
-  const ins = d?.lv4?.insert;
-  if (!ins) errs.push('4-C: 없음');
-  else {
-    inRange(ins.given, '4-C given');
-    if (ins.given === 1) errs.push('4-C: 첫 문장은 주어진 문장으로 쓰지 않음 (앞에 끼울 자리가 없음)');
-    if (n - 1 < 6) errs.push('4-C: 주어진 문장을 뺀 뒤 6문장 이상 있어야 ①~⑤ 자리를 만듦');
+  if (has('study')) {
+    if (d?.study?.length !== n) errs.push(`study: 문장 ${n}개마다 하나씩 (지금 ${d?.study?.length ?? 0}개)`);
+    (d?.study || []).forEach((s, i) => {
+      for (const k of ['ko', 'tag', 'logic', 'grammar']) if (!s[k]) errs.push(`study ${i + 1}번: ${k} 없음`);
+      for (const w of s.words || []) {
+        if (!w.en || !w.ko) errs.push(`study ${i + 1}번: 단어와 뜻을 모두`);
+        for (const [en, ko] of [...(w.syn || []), ...(w.ant || [])]) if (!en || !ko) errs.push(`study ${i + 1}번 ${w.en}: 동·반의어마다 뜻을 꼭 (${en || '?'})`);
+      }
+    });
   }
-  (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
-  if ((d?.wrap?.easy || []).length !== n) errs.push(`쉬운 말로 다시 읽기: 문장 ${n}개마다 하나씩`);
-  for (const k of ['topicEn', 'topicKo', 'titleEn', 'titleKo', 'oneLine']) if (!d?.wrap?.[k]) errs.push(`wrap.${k} 없음`);
+  if (has('flow')) {
+    const seen = (d?.flow || []).flatMap((f) => f.s || []);
+    seen.forEach((k) => inRange(k, 'flow'));
+    if (seen.length !== n || new Set(seen).size !== n) errs.push('flow: 모든 문장이 한 번씩 들어가야 함');
+    for (const k of ['topic', 'gist', 'contrast']) if (!d?.core?.[k]) errs.push(`core.${k} 없음`);
+  }
+  if (has('basic')) {
+    (d?.lv1?.ox || []).forEach(([, a, k], i) => { if (!['O', 'X'].includes(a)) errs.push(`1-B ${i + 1}: 답은 O 또는 X`); inRange(k, `1-B ${i + 1}`); });
+    (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
+    if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
+    if ((d?.lv3?.order || []).length !== (d?.lv3?.cards || []).length) errs.push('3-A: 순서와 카드 개수가 다름');
+  }
+  if (has('exam')) {
+    five(d?.lv4?.title, '4-A');
+    five(d?.lv4?.blank, '4-B');
+    five(d?.lv5?.summary, '5-A');
+    const ins = d?.lv4?.insert;
+    if (!ins) errs.push('4-C: 없음');
+    else {
+      inRange(ins.given, '4-C given');
+      if (ins.given === 1) errs.push('4-C: 첫 문장은 주어진 문장으로 쓰지 않음 (앞에 끼울 자리가 없음)');
+      if (n - 1 < 6) errs.push('4-C: 주어진 문장을 뺀 뒤 6문장 이상 있어야 ①~⑤ 자리를 만듦');
+    }
+    (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
+  }
+  if (has('wrap')) {
+    if ((d?.wrap?.easy || []).length !== n) errs.push(`쉬운 말로 다시 읽기: 문장 ${n}개마다 하나씩`);
+    for (const k of ['topicEn', 'topicKo', 'titleEn', 'titleKo', 'oneLine']) if (!d?.wrap?.[k]) errs.push(`wrap.${k} 없음`);
+  }
+  if (has('summary') && n) errs.push(...checkSummary(d).map((e) => `종합: ${e}`));
   return errs;
 }
 
@@ -79,25 +106,28 @@ const wordRows = (k, list) => list.map(([en, ko], j) => `<span class="lb ${k}">$
 const wordBlock = (w) => `<div class="wg"><span class="lb"></span><b class="e">${esc(w.en)}</b><span class="k hk">${esc(w.ko)}</span>${wordRows('syn', w.syn || [])}${wordRows('ant', w.ant || [])}</div>`;
 const range = (s) => (s.length > 1 ? `${s[0]}~${s[s.length - 1]}` : `${s[0]}`);
 
-function studyPages(d) {
+function studyPage(d) {
   const T = esc(d.title);
   return `
 <div class="stage first"><span>STAGE 1</span>문장 뜯어보기<em class="pname">${T}</em></div>
 <table class="study"><thead><tr><th>영어 원문</th><th>한글 해석 · 논리 · 문법</th><th>단어 · 동의어 · 반의어</th></tr></thead><tbody>
 ${d.sentences.map((s, i) => { const t = d.study[i]; return `<tr><td class="en"><span class="n">${i + 1}</span>${esc(s)}</td><td class="ko"><div class="tr">${esc(t.ko)}</div><div class="lgin"><div><span class="tag">${esc(t.tag)}</span>${esc(t.logic)}</div><div><span class="tag g">어법</span>${esc(t.grammar)}</div></div></td><td class="wd">${(t.words || []).map(wordBlock).join('')}</td></tr>`; }).join('\n')}
-</tbody></table>
-<div class="pb"></div>
+</tbody></table>`;
+}
+
+function flowPage(d) {
+  const T = esc(d.title);
+  return `
 <div class="stage first"><span>STAGE 2</span>흐름 지도<em class="pname">${T}</em></div>
 <div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map((k) => esc(d.sentences[k - 1])).join(' ')}</div>`).join('')}</div>
 <div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div>
 `;
 }
 
-function problemPages(d) {
+function problemPages(d, has) {
   const { lv1, lv2, lv3, lv4, lv5, wrap } = d;
-  const ins = insertPassage(d.sentences, lv4.insert.given);
-  return `
-<div class="wb"><div class="cols">
+  const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const basic = () => `
 ${LV(1, '읽고 기억하기')}
 ${Q('1-A', '단어', '뜻을 쓰세요.')}
 <div class="w-words">${lv1.words.map(([w], i) => `<span class="w">${n2(i)}${esc(w)}</span>${FILL}`).join('')}</div>
@@ -123,7 +153,8 @@ ${Q('3-B', '문장별 역할', '같은 보기를 여러 번 써도 됨')}
 <div class="w-sub">${d.sentences.map((_, i) => `${i + 1}번 (　)`).join('　 ')}</div>
 ${Q('3-C', '연결어 빈칸', '빈칸에 쓰고, 오른쪽에 하는 일')}
 ${LIST(lv3.conn.map(([t]) => esc(t)), { fill: '40px', nw: true })}
-
+`;
+  const exam = () => `
 ${LV(4, '수능형으로 풀기', '지문을 가리고 풀기')}
 ${Q('4-A', '제목', '가장 적절한 것은?')}
 ${OPTS(lv4.title.options)}
@@ -139,7 +170,8 @@ ${LV(5, '변형까지 대비하기', '지문을 가리고 풀기')}
 ${Q('5-A', '요약문', '(A), (B)에 들어갈 말은?')}
 ${EN(lv5.summary.sentence)}
 ${OPTS(lv5.summary.options, true)}
-</div>
+`;
+  const examFull = () => `
 <div class="w-full">
 ${Q('5-B', '어법', '( ) 안에서 맞는 것을 고르고, 오른쪽에 이유')}
 ${LIST(lv5.grammar.map(([t]) => esc(t)), { fill: '32%', nw: true, cls: 'en' })}
@@ -147,7 +179,8 @@ ${Q('5-C', '어휘', '문맥에 맞는 낱말에 ○')}
 ${LIST(lv5.vocab.map(([t]) => esc(t)), { nw: true, cls: 'en' })}
 ${Q('5-D', '바뀐 문장 찾기', '원문 번호를 쓰고, 바뀐 말에 밑줄 긋고 위에 원래 말')}
 ${LIST(lv5.para.map(([t]) => esc(t)), { mark: '(　　)번', nw: true, cls: 'en tall' })}
-</div>
+</div>`;
+  const wrapUp = () => `
 <div class="w-chk">
 <div class="w-q"><b>쉬운 말로 다시 읽기</b><span>문제를 다 푼 뒤, 1번부터 차례로 소리 내어 읽어 보세요.</span></div>
 <ol class="easy">${wrap.easy.map(([role, t], i) => `<li><span class="c">${i + 1}</span><span class="t">${esc(t)}</span><span class="x">${esc(role)}</span></li>`).join('')}</ol>
@@ -155,50 +188,71 @@ ${LIST(lv5.para.map(([t]) => esc(t)), { mark: '(　　)번', nw: true, cls: 'en 
 <div><b>주제</b><span class="en">${esc(wrap.topicEn)}</span><span class="ko">${esc(wrap.topicKo)}</span></div>
 <div><b>제목</b><span class="en">${esc(wrap.titleEn)}</span><span class="ko">${esc(wrap.titleKo)}</span></div>
 <div><b>한 줄로</b><span class="ko k1">${marked(wrap.oneLine)}</span></div>
-</div></div>
+</div></div>`;
+  const cols = (has('basic') ? basic() : '') + (has('exam') ? exam() : '');
+  return `
+<div class="wb">${cols ? `<div class="cols">${cols}</div>` : ''}${has('exam') ? examFull() : ''}${has('wrap') ? wrapUp() : ''}
 </div>`;
 }
 
-function answerPage(d) {
+function answerPage(d, has) {
   const { lv1, lv2, lv3, lv4, lv5 } = d;
   const A = (k, v) => `<div class="k">${k}</div><div class="v">${v}</div>`;
   const AL = (arr) => arr.map((v, i) => `<span>${i + 1}) ${v}</span>`).join('');
   const one = (q, opt = false) => `<span><b>${CIRCLE[q.answer - 1]}${opt ? ` ${esc(q.options[q.answer - 1])}` : ''}</b> ${esc(q.why || '')}</span>`;
-  const ins = insertPassage(d.sentences, lv4.insert.given);
-  return `
-<section class="answers-start"><div class="wb">
-<div class="w-lv"><span>정답</span><i>${esc(d.title)}</i></div>
-<div class="w-ans">
+  const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const basic = () => `
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
 ${A('2-A', AL(lv2.refs.map(([, a]) => esc(a))))}
 ${A('2-B', AL(lv2.easy.map(([, n]) => `${n}번`)))}
 ${A('3-A', `<span>① ${lv3.order.map((k) => `(${esc(k)})`).join(' → ')}</span><span>② ${lv3.steps.map(([, , a]) => esc(a)).join(' / ')}</span>${lv3.ownWords ? `<span>③ 예: ${esc(lv3.ownWords)}</span>` : ''}`)}
 ${A('3-B', AL(lv3.roles.map(esc)))}
-${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
+${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`;
+  const exam = () => `
 ${A('4-A', one(lv4.title))}
 ${A('4-B', one(lv4.blank, true))}
 ${A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`)}
 ${A('5-A', one(lv5.summary, true))}
 ${A('5-B', AL(lv5.grammar.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
 ${A('5-C', AL(lv5.vocab.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}
-${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}
+${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}`;
+  const summary = () => `
+<div class="k sm-k">종합</div><div class="v sm-k"><span>${esc(d.title)} 종합(Summary)</span></div>
+${summaryAnswers(d).map(([k, v]) => A(k, v)).join('\n')}`;
+  const rows = (has('basic') ? basic() : '') + (has('exam') ? exam() : '') + (has('summary') ? summary() : '');
+  if (!rows) return '';
+  return `
+<section class="answers-start"><div class="wb">
+<div class="w-lv"><span>정답</span><i>${esc(d.title)}</i></div>
+<div class="w-ans">${rows}
 </div></div></section>`;
 }
 
 // 글꼴: 기본은 Google Fonts (Noto Sans KR · Source Serif 4). 인터넷이 막힌 곳은 fontCss로 @font-face를 직접 넣음
 export const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap">';
 
-export function workbookHtml(d, { fontCss = '' } = {}) {
-  const errs = checkWorkbook(d);
+//   parts: 넣을 구성 (안 주면 원래 4쪽 + json에 summary가 있으면 종합 한 장도)
+export function workbookHtml(d, { fontCss = '', parts } = {}) {
+  parts = parts || [...BASE_PARTS, ...(d?.summary ? ['summary'] : [])];
+  const has = (p) => parts.includes(p);
+  const errs = checkWorkbook(d, parts);
   if (errs.length) throw new Error(`워크북 내용 확인:\n- ${errs.join('\n- ')}`);
+  // 앞쪽(문장 뜯어보기 → 흐름 지도 → 문제)은 이어서, 종합 한 장과 정답은 새 쪽에서
+  const front = [
+    has('study') && studyPage(d),
+    has('flow') && flowPage(d),
+    (has('basic') || has('exam') || has('wrap')) && problemPages(d, has),
+  ].filter(Boolean);
+  // 문장 뜯어보기 뒤에 다른 것이 오면 쪽을 넘김
+  const frontHtml = front.length ? `<section>${front.map((h, i) => (i === 0 && has('study') && front.length > 1 ? `${h}\n<div class="pb"></div>` : h)).join('')}</section>` : '';
+  const summary = has('summary') ? `<section class="${frontHtml ? 'answers-start' : ''}">${summaryHtml(d)}</section>` : '';
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(d.title)} 워크북</title>${fontCss ? '' : FONT_LINK}<style>
 ${fontCss}
 ${WORKBOOK_CSS}
+${has('summary') ? SUMMARY_CSS : ''}
 </style></head><body>
-<section>
-${studyPages(d)}${problemPages(d)}
-</section>${answerPage(d)}</body></html>`;
+${frontHtml}${summary}${answerPage(d, has)}</body></html>`;
 }
 
 export const WORKBOOK_CSS = `
@@ -272,6 +326,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v{padding:5px 0px;border-bottom:0.5px solid #e4e4e4;line-height:1.6}
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
+.w-ans .sm-k{border-top:1.2px solid #111111;margin-top:6px;font-weight:700}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#999999}

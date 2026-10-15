@@ -1,8 +1,9 @@
 // 워크북 내용 만들기 — 지문 하나에 AI를 한 번만 부름 (실패하면 틀린 곳을 알려 주고 한 번 더)
 //   문장 나누기 · 선지 정답 자리 · 문장 넣기 자리는 코드가 정하고, AI는 글만 씀
 import { callAI } from '../utils/ai.js'
-import { checkWorkbook } from './workbook.js'
+import { checkWorkbook, PARTS, BASE_PARTS } from './workbook.js'
 import SAMPLE from './sample.json'
+import SUMMARY_SAMPLE from './summary-sample.json'
 
 // 1백만 토큰당 달러 (입력, 출력) — 비용 표시용
 const PRICE = {
@@ -70,56 +71,111 @@ function exampleForPrompt() {
 const SYSTEM = `당신은 한국 고등학교 영어 선생님의 '지문 완전정복 워크북' 내용을 쓰는 사람입니다.
 반드시 JSON 하나만 출력하세요. 마크다운·설명 없이 순수 JSON만.`
 
-function prompt(sentences, title, level, fix = []) {
+// 고른 구성에 필요한 json 칸만 쓰게 함 (안 고른 칸은 지시문 · 예시에서 뺌)
+const keysOf = (parts) => PARTS.filter((p) => parts.includes(p.id)).flatMap((p) => p.keys)
+
+function prompt(sentences, title, level, parts, fix = []) {
   const n = sentences.length
-  const example = exampleForPrompt()
+  const keys = keysOf(parts)
+  const full = exampleForPrompt()
+  const example = Object.fromEntries(keys.map((k) => [k, full[k]]))
+  const rule = (k, text) => (keys.includes(k) ? `\n- ${text}` : '')
   return `지문: ${title || '(제목 없음)'} · 난이도 ${level}
 문장 번호는 코드가 붙였습니다 (모두 ${n}문장):
 ${sentences.map((s, i) => `${i + 1}) ${s}`).join('\n')}
 
-아래 예시(다른 지문)와 **똑같은 칸 이름·모양**으로 이 지문의 워크북 내용을 JSON으로 쓰세요. title·sentences는 쓰지 마세요.
+아래 예시(다른 지문)와 **똑같은 칸 이름·모양**으로 이 지문의 워크북 내용을 JSON으로 쓰세요. 이번에 쓸 칸: ${keys.join(', ')} (다른 칸·title·sentences는 쓰지 마세요).
 
-규칙
-- study: 문장마다 하나씩 정확히 ${n}개. ko 자연스러운 해석, tag 논리 꼬리표(주장·대조·과거·강조·전환점·결과·반전·예시·이유 등 2~3글자), logic 한 줄, grammar 어법 핵심을 짧게 '/'로 끊어서. words는 그 문장 핵심 단어 1~2개, syn·ant는 각 1~2개이며 [영어, 한글 뜻] — 뜻을 절대 빼지 말 것 (반의어가 없으면 빈 배열).
-- flow: 3~6단계, 모든 문장 번호가 한 번씩 순서대로 (s는 문장 번호 배열). label은 2~6글자.
-- core: topic 주제(한국어), gist 요지 한 문장, contrast 핵심 대조 한 줄 — 핵심어는 __밑줄__.
-- lv1.words: 핵심 단어 10개 [단어, 뜻]. lv1.ox: 5개 [한국어 문장, "O"|"X", 근거 문장 번호], O와 X를 섞음.
-- lv2.refs: 지칭어 4~5개 ["N번 지칭어", 가리키는 것]. lv2.easy: 문장마다 쉬운 말 한 줄(32자 안쪽) [쉬운 말, 원문 번호], 순서는 섞음.
-- lv3.cards: 흐름 카드 5개 [가~마, "단계: 내용"] 순서를 섞어서, order는 정답 순서. steps 5개 [단계 (번호), 첫 글자 힌트 빈칸 문장(영어, 예: i________), 답]. ownWords 예시 답. roleChoices "A 주장　B …" 한 줄, roles 문장마다 기호. conn 3~4개 [연결어 빈칸 영어 문장 55자 안쪽(…로 줄임), 답, "N번 · 하는 일"].
-- lv4.title: options 5개 영어 제목, **options[0]이 정답**, why에 정답 근거와 오답 이유(근거 문장 번호, 선지 번호 대신 '오답 1·2…'처럼 쓰지 말고 제목 내용으로). lv4.blank: 지문 문장 하나의 핵심 낱말을 ________로 비운 sentence, options 5개 낱말(options[0] 정답), why. lv4.insert: given = 주어진 문장 번호(2~${n}, 앞뒤 단서가 분명한 문장), why.
-- lv5.summary: 요약문 (A) ________ (B) ________, options 5개 "A — B" (options[0] 정답), why. grammar 4~5개: **지문 원문 문장만**, (맞는 것 / 틀린 것) 고르기, 80자 안쪽(…로 줄임) [문장, 답, 이유]. vocab 3개 [(맞는 낱말 / 헷갈리는 낱말) 문장, 답, 이유]. para 3~4개: 원문을 동의어로 바꾼 문장 [바꾼 문장, 원문 번호, "새 말 ← 원래 말 / …"].
-- wrap.easy: 문장마다 [tag, 쉬운 말] 1번부터 순서대로, 그래서·그런데·하지만 같은 연결어로 흐름이 이어지게. topicEn·topicKo, titleEn은 lv4.title 정답과 같게, titleKo, oneLine 한 줄 요지(__밑줄__).
+규칙${rule('study', `study: 문장마다 하나씩 정확히 ${n}개. ko 자연스러운 해석, tag 논리 꼬리표(주장·대조·과거·강조·전환점·결과·반전·예시·이유 등 2~3글자), logic 한 줄, grammar 어법 핵심을 짧게 '/'로 끊어서. words는 그 문장 핵심 단어 1~2개, syn·ant는 각 1~2개이며 [영어, 한글 뜻] — 뜻을 절대 빼지 말 것 (반의어가 없으면 빈 배열).`)}${rule('flow', 'flow: 3~6단계, 모든 문장 번호가 한 번씩 순서대로 (s는 문장 번호 배열). label은 2~6글자.')}${rule('core', 'core: topic 주제(한국어), gist 요지 한 문장, contrast 핵심 대조 한 줄 — 핵심어는 __밑줄__.')}${rule('lv1', `lv1.words: 핵심 단어 10개 [단어, 뜻]. lv1.ox: 5개 [한국어 문장, "O"|"X", 근거 문장 번호], O와 X를 섞음.`)}${rule('lv2', `lv2.refs: 지칭어 4~5개 ["N번 지칭어", 가리키는 것]. lv2.easy: 문장마다 쉬운 말 한 줄(32자 안쪽) [쉬운 말, 원문 번호], 순서는 섞음.`)}${rule('lv3', `lv3.cards: 흐름 카드 5개 [가~마, "단계: 내용"] 순서를 섞어서, order는 정답 순서. steps 5개 [단계 (번호), 첫 글자 힌트 빈칸 문장(영어, 예: i________), 답]. ownWords 예시 답. roleChoices "A 주장　B …" 한 줄, roles 문장마다 기호. conn 3~4개 [연결어 빈칸 영어 문장 55자 안쪽(…로 줄임), 답, "N번 · 하는 일"].`)}${rule('lv4', `lv4.title: options 5개 영어 제목, **options[0]이 정답**, why에 정답 근거와 오답 이유(근거 문장 번호, 선지 번호 대신 '오답 1·2…'처럼 쓰지 말고 제목 내용으로). lv4.blank: 지문 문장 하나의 핵심 낱말을 ________로 비운 sentence, options 5개 낱말(options[0] 정답), why. lv4.insert: given = 주어진 문장 번호(2~${n}, 앞뒤 단서가 분명한 문장), why.`)}${rule('lv5', `lv5.summary: 요약문 (A) ________ (B) ________, options 5개 "A — B" (options[0] 정답), why. grammar 4~5개: **지문 원문 문장만**, (맞는 것 / 틀린 것) 고르기, 80자 안쪽(…로 줄임) [문장, 답, 이유]. vocab 3개 [(맞는 낱말 / 헷갈리는 낱말) 문장, 답, 이유]. para 3~4개: 원문을 동의어로 바꾼 문장 [바꾼 문장, 원문 번호, "새 말 ← 원래 말 / …"].`)}${rule('wrap', `wrap.easy: 문장마다 [tag, 쉬운 말] 1번부터 순서대로, 그래서·그런데·하지만 같은 연결어로 흐름이 이어지게. topicEn·topicKo, titleEn은 lv4.title 정답과 같게, titleKo, oneLine 한 줄 요지(__밑줄__).${keys.includes('lv4') ? '' : ' titleEn은 이 글에 가장 알맞은 영어 제목.'}`)}
 - 선지는 길이를 비슷하게, 겹치는 선지 없이.
 ${fix.length ? `\n지난 답에서 고칠 곳:\n- ${fix.join('\n- ')}\n` : ''}
 예시:
 ${JSON.stringify(example)}`
 }
 
-export async function generateWorkbook({ passage, title, level, modelId, onStep = () => {} }) {
-  const sentences = splitSentences(passage)
-  if (sentences.length < 7) throw new Error(`문장이 ${sentences.length}개뿐이에요. 워크북은 7문장 이상 지문에 맞춰져 있어요.`)
-  const rnd = seeded(`${title}|${sentences.join(' ')}`)
-  const usage = { input: 0, output: 0 }
+// 기본 워크북 칸 (study · flow · Lv · wrap) — AI 한 번, 모양에 안 맞으면 틀린 곳을 알려 주고 한 번 더
+async function generateBase({ sentences, title, level, modelId, parts, rnd, usage, onStep }) {
   let fix = []
   for (let attempt = 1; attempt <= 2; attempt++) {
     onStep(attempt === 1 ? '워크북 내용 쓰는 중…' : '빠진 곳 고쳐서 다시 받는 중…')
-    const res = await callAI(SYSTEM, prompt(sentences, title, level, fix), modelId, { maxTokens: 12000, withUsage: true })
+    const res = await callAI(SYSTEM, prompt(sentences, title, level, parts, fix), modelId, { maxTokens: 12000, withUsage: true })
     usage.input += res.usage.input
     usage.output += res.usage.output
     const ai = res.data || {}
     if (ai.raw) { fix = ['JSON이 아니었음 — 순수 JSON만']; continue }
-    const lv4 = ai.lv4 || {}
-    const lv5 = ai.lv5 || {}
-    const data = {
-      ...ai,
-      title: title || '지문',
-      sentences,
-      lv4: { ...lv4, title: placeAnswer(lv4.title, rnd), blank: placeAnswer(lv4.blank, rnd) },
-      lv5: { ...lv5, summary: placeAnswer(lv5.summary, rnd) },
+    const data = { ...Object.fromEntries(keysOf(parts).map((k) => [k, ai[k]])), title: title || '지문', sentences }
+    if (parts.includes('exam')) {
+      const lv4 = ai.lv4 || {}
+      const lv5 = ai.lv5 || {}
+      data.lv4 = { ...lv4, title: placeAnswer(lv4.title, rnd), blank: placeAnswer(lv4.blank, rnd) }
+      data.lv5 = { ...lv5, summary: placeAnswer(lv5.summary, rnd) }
     }
-    const errs = checkWorkbook(data)
-    if (!errs.length) return { data, usage, cost: costWon(modelId, usage), attempts: attempt }
+    const errs = checkWorkbook(data, parts)
+    if (!errs.length) { onStep(''); return { data, attempts: attempt } }
     fix = errs
   }
   throw new Error(`AI 답이 워크북 모양에 맞지 않아요:\n- ${fix.join('\n- ')}`)
+}
+
+// 종합 한 장 — 선생님 견본을 따져 보고 정한 규칙 (어디에 무엇을 · 번호 · 섞기는 코드가 함)
+function summaryPrompt(sentences, title, level, fix = []) {
+  const n = sentences.length
+  return `지문: ${title || '(제목 없음)'} · 난이도 ${level}
+문장 번호는 코드가 붙였습니다 (모두 ${n}문장):
+${sentences.map((s, i) => `${i + 1}) ${s}`).join('\n')}
+
+이 지문으로 '종합 한 장' 학습지 내용을 JSON { "summary": { ... } } 하나로 쓰세요. 아래 예시(다른 지문)와 똑같은 칸 이름·모양.
+목표: 학교 내신 시험에 실제로 나올 자리를 고르는 것. 쉬운 것으로 개수만 채우지 말 것.
+
+규칙
+- arrange: 배열 문장 ${n >= 8 ? '2개' : '1~2개'} — 주제문 1개(kind "주제문 서술형") + 시험에 나올 핵심 구문 1개(kind "배열"). frame은 원문 그대로 쓰고 섞을 부분만 { }로 묶음 ({ }를 빼면 원문과 글자 하나까지 같게, { } 묶음마다 2낱말 이상, 섞는 낱말 모두 5개 이상). ko 해석, why 핵심 구문 설명(정답 쪽에만 나감). 배열 문장에는 다른 문제를 넣지 않음.
+- marks: 지문 안 문제. 각각 s(문장 번호), type, target(그 문장에 **그대로** 있는 말, 대소문자까지), why(정답 이유, 정답 쪽에만 나감).
+  · type "어법" ${Math.min(12, Math.max(3, Math.round((n - 2) * 0.8)))}~25개: wrong = 같은 어법 포인트를 시험하는 그럴듯한 틀린 형태, point = 어법 포인트 이름. 시험에 잘 나오는 자리 먼저(가정법, 분사·분사구문, 관계사, 동격 that, 도치, 병렬, 수동태, to부정사·동명사, 비교, so~that, 접속사·전치사 구별 등). 수 일치만으로 바로 틀린 게 보이는 오답(예: 주어 they인데 was/were)은 쓰지 않음. **같은 point는 2번까지.**
+  · type "어휘" 2~6개: wrong = 문맥상 반대·혼동 낱말. 제목·첫 문장만 보고 바로 맞히는 것은 쓰지 않음.
+  · type "빈칸" 2~8개: target은 한 낱말, 시험에 나올 내용어(형용사·동사·명사), **지문 다른 곳에 다시 나오지 않는 낱말**(다시 나오면 답이 보임), 답이 하나로 정해지는 것. why에는 뜻.
+  · 같은 문장 안에서 target끼리 겹치지 않게.
+- refs: 지칭 2~4개 {s, target, answer(가리키는 것, 우리말)}. 쉬운 It·they보다 this/these/that + 명사, 앞 문장 여러 개를 가리키는 말을 먼저. 배열 문장에서 고르지 않음.
+- order: 흐름 카드 3~5개 {s: 문장 번호 배열, card: 그 묶음 내용 한국어 30자 안쪽}. s 묶음이 1번부터 ${n}번까지 빠짐없이 차례로. 카드에 '처음·먼저·마지막·결론·끝으로·이어서' 같은 자리 힌트 말을 쓰지 않음 (기호 (A)~(E)는 코드가 섞음).
+- topic: {en 영어 주제 3~10낱말 (명사구), ko}. title: {en 영어 제목 3~10낱말, ko}. 낱말은 코드가 섞음.
+- sum: {sentence 영어 요약 한 문장에 (A)(B)(C) 자리 2~3개, answers 각 한 낱말 — 지문에 나온 낱말(어형 변형 가능), why 근거 문장 번호}. 한글 해석은 쓰지 않음.
+- key: 글 전체를 묻는 핵심 질문 {question 영어, answer 질문에 **바로** 답하는 영어 한 문장 — 섞을 부분 2~5개를 { }로 (묶음마다 2낱말 이상), changes 어형을 바꿔 줄 낱말 0~2개 [[문장 속 낱말, 원형]], ko 해석}. What·How 질문에 'This is because'로 답하지 않음. 글에 결론·단서(예: 아직 검증 안 됨)가 있으면 답에 담음. 지문에 없는 낱말은 되도록 쓰지 않음.
+${fix.length ? `\n지난 답에서 고칠 곳:\n- ${fix.join('\n- ')}\n` : ''}
+예시:
+${JSON.stringify(SUMMARY_SAMPLE)}`
+}
+
+async function generateSummary({ sentences, title, level, modelId, usage, onStep }) {
+  let fix = []
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    onStep(attempt === 1 ? '종합 한 장 쓰는 중…' : '종합 한 장 고쳐서 다시 받는 중…')
+    const res = await callAI(SYSTEM, summaryPrompt(sentences, title, level, fix), modelId, { maxTokens: 8000, withUsage: true })
+    usage.input += res.usage.input
+    usage.output += res.usage.output
+    const ai = res.data || {}
+    if (ai.raw) { fix = ['JSON이 아니었음 — 순수 JSON만']; continue }
+    const data = { title: title || '지문', sentences, summary: ai.summary || ai }
+    const errs = checkWorkbook(data, ['summary']).map((e) => e.replace(/^종합: /, ''))
+    if (!errs.length) { onStep(''); return { summary: data.summary, attempts: attempt } }
+    fix = errs
+  }
+  throw new Error(`AI 답이 종합 한 장 모양에 맞지 않아요:\n- ${fix.join('\n- ')}`)
+}
+
+// parts: 고른 구성 (PARTS의 id). 기본 칸과 종합 한 장은 따로 AI를 불러 같이 기다림
+export async function generateWorkbook({ passage, title, level, modelId, parts = BASE_PARTS, onStep = () => {} }) {
+  const sentences = splitSentences(passage)
+  if (!parts.length) throw new Error('워크북 구성을 하나 이상 골라 주세요.')
+  if (parts.includes('exam') && sentences.length < 7) throw new Error(`문장이 ${sentences.length}개뿐이에요. Lv4~5(문장 넣기)는 7문장 이상 지문에 맞춰져 있어요.`)
+  if (sentences.length < 5) throw new Error(`문장이 ${sentences.length}개뿐이에요. 워크북은 5문장 이상 지문에 맞춰져 있어요.`)
+  const rnd = seeded(`${title}|${sentences.join(' ')}`)
+  const usage = { input: 0, output: 0 }
+  const base = parts.filter((p) => p !== 'summary')
+  const steps = {}
+  const step = (k) => (t) => { steps[k] = t; onStep(Object.values(steps).filter(Boolean).join(' · ')) }
+  const [b, sm] = await Promise.all([
+    base.length ? generateBase({ sentences, title, level, modelId, parts: base, rnd, usage, onStep: step('b') }) : null,
+    parts.includes('summary') ? generateSummary({ sentences, title, level, modelId, usage, onStep: step('s') }) : null,
+  ])
+  const data = { ...(b?.data || { title: title || '지문', sentences }), ...(sm ? { summary: sm.summary } : {}) }
+  return { data, parts, usage, cost: costWon(modelId, usage), attempts: Math.max(b?.attempts || 1, sm?.attempts || 1) }
 }
