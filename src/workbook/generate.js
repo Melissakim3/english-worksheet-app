@@ -124,6 +124,15 @@ export async function generateWorkbook({ passage, title, level, modelId, parts =
   if (sentences.length < 5) throw new Error(`문장이 ${sentences.length}개뿐이에요. 워크북은 5문장 이상 지문에 맞춰져 있어요.`)
   const rnd = seeded(`${title}|${sentences.join(' ')}`)
   const usage = { input: 0, output: 0 }
-  const { data, attempts } = await generateBase({ sentences, title, level, modelId, parts, rnd, usage, onStep })
+  let got
+  try {
+    got = await generateBase({ sentences, title, level, modelId, parts, rnd, usage, onStep })
+  } catch (e) {
+    // 실패해도 쓴 비용은 알려 줌 (여러 지문 합계에 넣음)
+    e.usage = usage
+    e.cost = costWon(modelId, usage)
+    throw e
+  }
+  const { data, attempts } = got
   return { data, parts, usage, cost: costWon(modelId, usage), attempts }
 }

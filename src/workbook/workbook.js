@@ -310,12 +310,11 @@ ${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}`;
 // 글꼴: 기본은 Google Fonts (Noto Sans KR · Source Serif 4). 인터넷이 막힌 곳은 fontCss로 @font-face를 직접 넣음
 export const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap">';
 
-//   parts: 넣을 구성 (안 주면 원래 4쪽)
-export function workbookHtml(d, { fontCss = '', parts } = {}) {
-  parts = parts || BASE_PARTS;
+// 워크북 하나 → 앞쪽(문제) html · 정답 쪽 html  (parts: 넣을 구성, 안 주면 원래 4쪽)
+function workbookBody(d, parts = BASE_PARTS) {
   const has = (p) => parts.includes(p);
   const errs = checkWorkbook(d, parts);
-  if (errs.length) throw new Error(`워크북 내용 확인:\n- ${errs.join('\n- ')}`);
+  if (errs.length) throw new Error(`워크북 내용 확인${d?.title ? ` (${d.title})` : ''}:\n- ${errs.join('\n- ')}`);
   // 문장 뜯어보기 → 흐름 지도 → 문제는 이어서, 정답은 새 쪽에서
   const front = [
     has('study') && studyPage(d),
@@ -323,12 +322,26 @@ export function workbookHtml(d, { fontCss = '', parts } = {}) {
     (has('basic') || has('exam') || has('wrap')) && problemPages(d, has),
   ].filter(Boolean);
   // 문장 뜯어보기 뒤에 다른 것이 오면 쪽을 넘김
-  const frontHtml = front.length ? `<section>${front.map((h, i) => (i === 0 && has('study') && front.length > 1 ? `${h}\n<div class="pb"></div>` : h)).join('')}</section>` : '';
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(d.title)} 워크북</title>${fontCss ? '' : FONT_LINK}<style>
+  const frontHtml = front.map((h, i) => (i === 0 && has('study') && front.length > 1 ? `${h}\n<div class="pb"></div>` : h)).join('');
+  return { front: frontHtml, answers: answerPage(d, has) };
+}
+
+const doc = (title, fontCss, body) => `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)} 워크북</title>${fontCss ? '' : FONT_LINK}<style>
 ${fontCss}
 ${WORKBOOK_CSS}
 </style></head><body>
-${frontHtml}${answerPage(d, has)}</body></html>`;
+${body}</body></html>`;
+
+export function workbookHtml(d, { fontCss = '', parts } = {}) {
+  const { front, answers } = workbookBody(d, parts);
+  return doc(d.title, fontCss, `${front ? `<section>${front}</section>` : ''}${answers}`);
+}
+
+// 여러 지문 워크북을 한 문서로 (인쇄 한 번 · PDF 하나) — 지문마다 새 쪽, 정답은 맨 뒤에 지문 차례대로 모음
+export function workbooksHtml(list, { fontCss = '', parts, title = '' } = {}) {
+  const bodies = list.map((d) => workbookBody(d, parts));
+  const fronts = bodies.map((b, i) => (b.front ? `<section class="${i ? 'answers-start' : ''}">${b.front}</section>` : '')).join('\n');
+  return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${bodies.map((b) => b.answers).join('\n')}`);
 }
 
 export const WORKBOOK_CSS = `
