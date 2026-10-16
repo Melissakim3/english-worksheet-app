@@ -8,6 +8,7 @@ import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
 import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
 import { exportToWord } from './utils/exportWord.js'
 import { extractTextFromPDF, splitPassagesWithAI, splitByDivider } from './utils/pdfExtract.js'
+import { takeIncoming } from './utils/incoming.js'
 
 import Stage1 from './components/Stage1.jsx'
 import Stage2 from './components/Stage2.jsx'
@@ -64,6 +65,22 @@ export default function App() {
   const [results, setResults] = useState({})
   const [openStages, setOpenStages] = useState(new Set([1,2,3,4,5,6,7,8,9]))
   const [error, setError] = useState('')
+
+  // cm-variant에서 고른 지문 받기 (주소 #cm=…) — 하나면 단일 지문(워크북 가능), 여럿이면 여러 지문
+  useEffect(() => {
+    const got = takeIncoming()
+    if (!got) return
+    if (got.title) setTitle(got.title)
+    if (got.passages.length === 1) {
+      setMultiMode(false)
+      setPassage(got.passages[0])
+    } else {
+      setMultiMode(true)
+      setPassage(got.passages.join('\n\n---\n\n'))
+      setMultiPassages(got.passages)
+      setMultiResults([])
+    }
+  }, [])
 
   // 제목을 브라우저 탭 제목(=인쇄/PDF 저장 시 기본 파일명)에 반영
   useEffect(() => {
