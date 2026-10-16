@@ -21,6 +21,7 @@ import Stage8 from './components/Stage8.jsx'
 import Stage9 from './components/Stage9.jsx'
 import AnswerKey from './components/AnswerKey.jsx'
 import ModelSelector from './components/ModelSelector.jsx'
+import HowTo from './components/HowTo.jsx'
 import WorkbookPanel from './components/WorkbookPanel.jsx'
 
 const STAGES = [
@@ -299,6 +300,7 @@ export default function App() {
       </div>
 
       <div className="main-content">
+        <HowTo />
         <ModelSelector selectedId={modelId} onChange={handleModelChange} />
 
         <div className="input-section no-print">
