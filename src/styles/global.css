@@ -850,6 +850,8 @@ tbody td { padding: 5px 8px; vertical-align: top; line-height: 1.65; }
 .workbook-error { margin-top: 10px; color: #c00; font-size: 11px; white-space: pre-wrap; font-family: var(--font-sans); }
 .workbook-panel .worksheet-toolbar { margin-top: 14px; align-items: center; }
 .workbook-cost { font-size: 11px; color: var(--grey-dark); margin-left: 6px; }
+.workbook-prefix { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--grey-dark); }
+.workbook-prefix input { width: 80px; padding: 4px 6px; font-size: 11px; border: 1px solid var(--grey-light); border-radius: 3px; }
 .workbook-each { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--grey-dark); }
 .workbook-each .print-btn { padding: 4px 10px; font-size: 11px; }
 .workbook-tip { font-size: 11px; color: var(--grey-mid); margin: 6px 0 8px; }

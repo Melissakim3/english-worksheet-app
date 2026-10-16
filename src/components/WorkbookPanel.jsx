@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { workbookHtml, workbooksHtml, PARTS, BASE_PARTS } from '../workbook/workbook.js'
 import { generateWorkbook } from '../workbook/generate.js'
+import { makeZip, safeName } from '../utils/zip.js'
 
 // 고른 구성은 다음에도 그대로 (브라우저에 기억)
 const PARTS_KEY = 'workbookParts'
@@ -12,6 +13,24 @@ function loadParts() {
   return [...BASE_PARTS]
 }
 
+// 파일 이름 앞 글자 (선생님: '[Basic]') — 바꾸면 기억
+const PREFIX_KEY = 'workbookFilePrefix'
+const loadPrefix = () => { try { return localStorage.getItem(PREFIX_KEY) ?? '[Basic]' } catch { return '[Basic]' } }
+
+// 서버(api/pdf.js)가 크롬으로 A4 PDF를 만들어 줌 — 워크북 내용(json)만 보냄
+async function fetchPdf(body) {
+  const r = await fetch('/api/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `PDF 서버 오류 (${r.status})`)
+  return new Uint8Array(await r.arrayBuffer())
+}
+function download(blob, name) {
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000)
+}
+
 // 지문 완전정복 워크북 — 고른 구성만 AI로 받고, 선생님이 고른 모양 그대로 미리보기 · 인쇄
 //   passages: [{ passage, title }] — 하나면 단일 지문, 여럿이면 지문마다 차례로 만들어 한 문서(PDF 하나)로
 //   (여러 지문: 지문마다 새 쪽, 정답은 맨 뒤에 모음 · 한 지문이 실패해도 나머지는 계속 만들고 실패한 지문을 알려 줌)
@@ -21,6 +40,8 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
   const [step, setStep] = useState('')
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+  const [prefix, setPrefix] = useState(loadPrefix)
+  const [pdfStep, setPdfStep] = useState('')
   const frameRef = useRef()
   const list = passages.filter((p) => p.passage?.trim())
   const many = list.length > 1
@@ -88,6 +109,36 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
     document.body.appendChild(f)
   }
 
+  // PDF 파일로 받기: 하나면 PDF 하나, 여럿이면 zip(전체본 1개 + 번호별) — 실패한 파일은 빼고 알려 줌
+  const fileName = (t, tail = '워크북') => `${safeName(`${prefix.trim() ? `${prefix.trim()} ` : ''}${t}`)}_${tail}.pdf`
+  const savePdfs = async () => {
+    setPdfStep('PDF 만드는 중…'); setError('')
+    try {
+      if (result.list.length === 1) {
+        const d = result.list[0]
+        download(new Blob([await fetchPdf({ data: d, parts })], { type: 'application/pdf' }), fileName(d.title))
+      } else {
+        const files = []
+        const failed = []
+        const n = result.list.length
+        setPdfStep(`PDF 만드는 중… 전체본 (1/${n + 1})`)
+        try { files.push({ name: fileName(title || '지문', '전체_워크북'), data: await fetchPdf({ list: result.list, parts, title }) }) }
+        catch (e) { failed.push(`전체본: ${e.message}`) }
+        for (let i = 0; i < n; i++) {
+          const d = result.list[i]
+          setPdfStep(`PDF 만드는 중… ${d.title} (${i + 2}/${n + 1})`)
+          try { files.push({ name: fileName(d.title), data: await fetchPdf({ data: d, parts }) }) }
+          catch (e) { failed.push(`${d.title}: ${e.message}`) }
+        }
+        if (files.length) download(makeZip(files), `${safeName(`${prefix.trim() ? `${prefix.trim()} ` : ''}${title || '워크북'}`)}_워크북.zip`)
+        if (failed.length) setError(`PDF로 못 만든 파일 ${failed.length}개 (나머지는 zip에 들어 있어요):\n${failed.join('\n')}`)
+      }
+    } catch (e) {
+      setError(`PDF를 만들지 못했어요: ${e.message}\n(인쇄 버튼 → 'PDF로 저장'은 그대로 쓸 수 있어요)`)
+    }
+    setPdfStep('')
+  }
+
   const saveJson = () => {
     const data = result.list.length > 1 ? result.list : result.list[0]
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -125,6 +176,8 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
         <>
           <div className="worksheet-toolbar">
             <button className="print-btn" onClick={print}>{result.list.length > 1 ? `전체 ${result.list.length}개 이어서 인쇄 / PDF` : '인쇄 / PDF 저장'}</button>
+            <button className="print-btn" onClick={savePdfs} disabled={!!pdfStep}>{pdfStep ? `⏳ ${pdfStep}` : result.list.length > 1 ? `📦 PDF ${result.list.length + 1}개 zip으로 받기` : '📄 PDF 파일로 받기'}</button>
+            <label className="workbook-prefix">파일 이름 앞<input value={prefix} onChange={(e) => { setPrefix(e.target.value); try { localStorage.setItem(PREFIX_KEY, e.target.value) } catch {} }} placeholder="(없음)" /></label>
             <button className="print-btn outline" onClick={saveJson}>내용 JSON 저장</button>
             <span className="workbook-cost">
               {result.list.length > 1 ? `워크북 ${result.list.length}개 · ` : '이번 워크북 '}약 {result.cost.toLocaleString()}원 · 입력 {result.usage.input.toLocaleString()} / 출력 {result.usage.output.toLocaleString()} 토큰{result.retried ? ` · ${result.list.length > 1 ? `${result.retried}개 ` : ''}한 번 고쳐 받음` : ''}
