@@ -327,8 +327,8 @@ function workbookBody(d, parts = BASE_PARTS) {
     has('flow') && flowPage(d),
     (has('basic') || has('exam') || has('wrap')) && problemPages(d, has),
   ].filter(Boolean);
-  // 문장 뜯어보기 뒤에 다른 것이 오면 쪽을 넘김
-  const frontHtml = front.map((h, i) => (i === 0 && has('study') && front.length > 1 ? `${h}\n<div class="pb"></div>` : h)).join('');
+  // 문장 뜯어보기가 한 쪽을 넘으면 넘친 문장 바로 뒤에 흐름 지도가 이어짐 (빈 쪽 없이) — 넘치는 곳에는 '다음 쪽에 이어집니다' 표시 (CONT_SCRIPT)
+  const frontHtml = front.join('');
   return { front: frontHtml, answers: answerPage(d, has) };
 }
 
@@ -336,7 +336,35 @@ const doc = (title, fontCss, body) => `<!doctype html><html lang="ko"><head><met
 ${fontCss}
 ${WORKBOOK_CSS}
 </style></head><body>
-${body}</body></html>`;
+${body}<script>${CONT_SCRIPT}</script></body></html>`;
+
+// 문장 뜯어보기가 첫 쪽을 넘으면, 넘어가는 문장 바로 앞에 '▼ 다음 쪽에 이어집니다' 줄을 넣음
+//   인쇄 쪽(A4 − 위 6mm · 아래 9mm, 너비 192mm)과 같은 너비로 재서 정함. 다 되면 <html data-ready="1"> (PDF 스크립트 · 앱 인쇄가 기다림)
+const CONT_SCRIPT = `(async () => {
+  try { await document.fonts.ready; } catch (e) {}
+  const root = document.documentElement;
+  const keep = root.style.width;
+  root.style.width = '192mm';
+  const PAGE = 282 * 96 / 25.4, MARK = 22, y = (el) => el.getBoundingClientRect().top + window.scrollY;
+  const first = document.querySelector('section');
+  for (const t of document.querySelectorAll('table.study')) {
+    const sec = t.closest('section');
+    const top = !sec || sec === first ? 0 : y(sec);
+    const rows = [...t.tBodies[0].rows];
+    const bottom = (r) => r.getBoundingClientRect().bottom + window.scrollY - top;
+    // 정말 넘치는 첫 문장(i) 앞에 표시. 표시 줄이 들어갈 자리가 없으면 한 문장 앞으로
+    let i = rows.findIndex((r) => bottom(r) > PAGE);
+    if (i > 1 && bottom(rows[i - 1]) > PAGE - MARK) i -= 1;
+    if (i > 0) {
+      const tr = document.createElement('tr');
+      tr.className = 'cont';
+      tr.innerHTML = '<td colspan="3">▼ 다음 쪽에 이어집니다 (' + (i + 1) + '번 문장부터)</td>';
+      rows[i].before(tr);
+    }
+  }
+  root.style.width = keep;
+  root.dataset.ready = '1';
+})();`;
 
 export function workbookHtml(d, { fontCss = '', parts } = {}) {
   const { front, answers } = workbookBody(d, parts);
@@ -362,8 +390,10 @@ section{break-after:auto}
 .stage{padding-bottom:2px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:10.5pt;border-bottom:1.3px solid #333333;padding:4px 0px 6px;margin:4px 0px 0px}
 .stage span{display:inline-block;margin-right:6px;border:1.3px solid #222222;font-size:7pt;letter-spacing:2px;padding:1px 7px;margin:0px;font-family:"Liberation Mono", "Courier New", monospace}
 table.study tr{break-inside:avoid}
+table.study tr.cont{break-after:page}
+table.study tr.cont td{border:none;text-align:right;font-size:7.6pt;font-weight:700;color:#222222;padding:4px 4px 0px}
 table.study{width:100%;border-collapse:collapse;table-layout:fixed}
-table.study th{text-align:left;font-size:6.5pt;color:#888888;font-weight:500;padding:12px 6px 5px;border-bottom:1.3px solid #222222}
+table.study th{text-align:left;font-size:6.5pt;color:#5c5c5c;font-weight:500;padding:12px 6px 5px;border-bottom:1.3px solid #222222}
 table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5px 6px}
 .tr{border-bottom:1px dotted #cfcfcf;padding-bottom:5px;margin-bottom:5px}
 .tag{display:inline-block;font-weight:700;border-radius:2px;font-size:6pt !important;padding:1px 4px !important;margin-right:6px !important;color:#a5770a !important;background:#fcefc7 !important}
@@ -378,16 +408,16 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .wb .cols > .w-lv:first-child{margin-top:0px}
 .w-lv b{font-size:6.4pt;letter-spacing:1px;border:0.8px solid #111111;padding:0px 4px;line-height:1.45}
 .w-lv span{font-size:9pt;font-weight:700}
-.w-lv i{margin-left:auto;font-style:normal;color:#999999;font-size:6.6pt}
+.w-lv i{margin-left:auto;font-style:normal;color:#666666;font-size:6.6pt}
 .w-q{display:flex;align-items:baseline;gap:6px;margin:9px 0px 3px;break-after:avoid}
 .w-q b{font-size:7.9pt}
-.w-q span{color:#8a8a8a;font-size:6.8pt;margin-left:3px}
+.w-q span{color:#5c5c5c;font-size:6.8pt;margin-left:3px}
 .w-list{list-style:none;margin:0px;padding:0px}
 .w-list li{display:flex;align-items:baseline;gap:6px;padding:1.6px 0px;break-inside:avoid}
-.wb .n{color:#aaaaaa;font-size:6.3pt;flex:0 0 7px;text-align:right}
+.wb .n{color:#777777;font-size:6.3pt;flex:0 0 7px;text-align:right}
 .w-list .x{flex:1 1 auto;min-width:0px}
 .w-list.nw .x{white-space:nowrap;overflow:hidden;text-overflow:clip}
-.w-list .m{flex:0 0 auto;color:#b0b0b0;font-size:6.6pt;margin-left:6px;white-space:nowrap}
+.w-list .m{flex:0 0 auto;color:#7a7a7a;font-size:6.6pt;margin-left:6px;white-space:nowrap}
 .w-list.en .x{font-family:"Source Serif 4", serif;font-size:8pt}
 .w-list.tall li{padding:7px 0px 1px}
 .w-fill{flex:1 1 auto;border-bottom:0.6px solid #c6c6c6;min-width:24px;align-self:stretch}
@@ -398,7 +428,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-box.c{text-align:center;white-space:nowrap}
 .w-box.en{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.55;text-align:justify}
 .w-sub{margin:5px 0px 2px}
-.w-sub .g{color:#8a8a8a;font-size:6.8pt;margin-left:4px}
+.w-sub .g{color:#5c5c5c;font-size:6.8pt;margin-left:4px}
 .keep{break-after:avoid}
 .w-write{display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-items:end;margin:2px 0px 4px}
 .w-write span:not(.w-fill){font-weight:700;font-size:7.2pt}
@@ -416,7 +446,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-gp{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.85;text-align:justify;margin:2px 0px 4px}
 .w-gp .gp{font-weight:600}
 .w-gp .gv{font-weight:600;color:#2a5d8f}
-.w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#777777;margin-left:1px}
+.w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#4d4d4d;margin-left:1px}
 .w-chk{border-top:0.8px solid #111111;margin-top:14px;padding-top:1px;break-inside:avoid}
 .w-chk ol{list-style:none;padding:0px;margin:3px 0px 0px;column-count:2;column-gap:9mm}
 .w-chk li{font-size:7pt;padding:2px 0px;break-inside:avoid;display:flex;gap:6px}
@@ -427,7 +457,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v b{font-weight:700}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
-.fmap .fl i{font-style:normal;font-size:6pt;color:#999999}
+.fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
 .fmap .ft{font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.45;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
 .fmap .ft:nth-last-child(1){border-bottom:none}
 .fmap .fl{border-left:2.5px solid;padding:2px 0px 2px 6px;display:flex;flex-direction:column;justify-content:center;line-height:1.25;border-bottom:0.5px solid #e6e6e6}
@@ -435,39 +465,39 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .core{border:1px solid #333333;border-radius:3px;padding:4px 12px;margin-bottom:12px;break-inside:avoid}
 .core div{display:grid;grid-template-columns:52px 1fr;align-items:baseline;padding:2px 0px;border-bottom:0.5px solid #e6e6e6}
 .core div:last-child{border-bottom:none}
-.core b{font-size:7pt;letter-spacing:1px;color:#555555}
+.core b{font-size:7pt;letter-spacing:1px;color:#3a3a3a}
 .core span{font-size:8.2pt;font-weight:500}
 .core u{text-decoration-thickness:1px;text-underline-offset:3px}
 table.study th:nth-child(1){width:53% !important}
 table.study th:nth-child(2){width:28% !important}
 table.study th:nth-child(3){width:19% !important}
 table.study td.en{font-family:"Source Serif 4", serif;width:auto;padding:5px 12px 4px 6px;color:#111111;line-height:3 !important;font-size:10pt !important}
-table.study td.ko{width:auto;color:#555555;padding-left:5px;padding-right:8px;font-size:6.6pt !important;line-height:1.7 !important}
+table.study td.ko{width:auto;color:#3a3a3a;padding-left:5px;padding-right:8px;font-size:6.6pt !important;line-height:1.7 !important}
 table.study td.ko .tr{border-bottom:none !important;margin:0px !important;padding:0px !important}
 .lgin{margin-top:6px;padding-top:5px;border-top:1px dotted #d6d6d6;font-size:6.5pt;line-height:1.6;color:#333333}
 .lgin div{margin-bottom:4px}
-.wg{display:grid;grid-template-columns:7px 66px 1fr;gap:0px 3px;line-height:1.5;margin-top:7px;align-items:baseline}
+.wg{display:grid;grid-template-columns:8px 70px 1fr;gap:0px 3px;line-height:1.38;margin-top:5px;align-items:baseline}
 .wg:first-child{margin-top:0px}
-.wg .e{font-size:6.4pt;color:#222222;white-space:nowrap}
-.wg b.e{font-family:"Source Serif 4", serif;font-weight:600;font-size:6.8pt;color:#111111}
-.wg .k{font-size:5.9pt;color:#888888;word-break:keep-all}
+.wg .e{font-size:7pt;color:#111111;overflow-wrap:anywhere}
+.wg b.e{font-family:"Source Serif 4", serif;font-weight:600;font-size:7.4pt;color:#111111}
+.wg .k{font-size:6.6pt;color:#333333;word-break:keep-all;overflow-wrap:anywhere}
 .wg .hk{align-self:baseline}
-.wg .lb{font-size:5.6pt;font-weight:700}
-.wg .lb.syn,.wg .e.syn{color:#2e7d4a}
-.wg .lb.ant,.wg .e.ant{color:#c0392b}
+.wg .lb{font-size:6.2pt;font-weight:700}
+.wg .lb.syn,.wg .e.syn{color:#1d6b3a}
+.wg .lb.ant,.wg .e.ant{color:#b02a1e}
 .wg .lb.syn:not(:empty),.wg .lb.ant:not(:empty){padding-top:0px}
 table.study td.wd{border-left:1px dotted #e0e0e0;padding:8px 0px 6px 8px !important}
 table.study td.en .n{display:inline-block;width:13px;height:13px;line-height:12px;border:1px solid #222222;border-radius:50%;text-align:center;font-family:"Noto Sans KR", sans-serif;font-size:7pt !important;font-weight:700 !important;color:#111111 !important;margin-right:6px !important;vertical-align:1px !important}
 ol.easy{list-style:none;padding:0px;margin:4px 0px 0px;column-count:1 !important}
 ol.easy li{display:grid;grid-template-columns:16px 1fr 34px;align-items:baseline;padding:3px 0px;border-bottom:0.5px solid #ececec;line-height:1.5;font-size:7.8pt !important}
 ol.easy .c{display:inline-block;width:11px;height:11px;line-height:10px;border:0.8px solid #222222;border-radius:50%;text-align:center;font-size:6pt;font-weight:700}
-ol.easy .x{text-align:right;color:#999999;font-size:6.4pt}
+ol.easy .x{text-align:right;color:#666666;font-size:6.4pt}
 .tt{margin-top:6px;border:0.6px solid #9a9a9a;padding:3px 10px}
 .tt div{display:grid;grid-template-columns:40px auto 1fr;column-gap:12px;align-items:baseline;padding:2.5px 0px;border-bottom:0.5px solid #ececec}
 .tt div:last-child{border-bottom:none}
-.tt b{font-size:6.6pt;letter-spacing:1px;color:#555555}
+.tt b{font-size:6.6pt;letter-spacing:1px;color:#3a3a3a}
 .tt .en{font-family:"Source Serif 4", serif;font-size:8.6pt;font-weight:600;color:#111111}
-.tt .ko{font-size:7pt;color:#777777}
+.tt .ko{font-size:7pt;color:#4d4d4d}
 .tt .k1{grid-column:2 / 4;font-size:7.8pt;color:#222222}
 .tt u{text-decoration-thickness:1px;text-underline-offset:3px}
 `;

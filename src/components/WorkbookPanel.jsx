@@ -71,6 +71,23 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
     w.print()
   }
 
+  // 여러 지문일 때 번호별로 따로: 그 지문 워크북만 숨은 창에 넣어 인쇄 (PDF 저장 이름 = 지문 이름)
+  const printOne = (d) => {
+    const f = document.createElement('iframe')
+    f.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0'
+    f.srcdoc = workbookHtml(d, { parts })
+    f.onload = async () => {
+      const w = f.contentWindow
+      await w.document.fonts?.ready
+      // '다음 쪽에 이어집니다' 표시를 다 넣을 때까지 (최대 3초)
+      for (let i = 0; i < 30 && w.document.documentElement.dataset.ready !== '1'; i++) await new Promise((r) => setTimeout(r, 100))
+      w.focus()
+      w.print()
+      setTimeout(() => f.remove(), 60000)
+    }
+    document.body.appendChild(f)
+  }
+
   const saveJson = () => {
     const data = result.list.length > 1 ? result.list : result.list[0]
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -107,12 +124,18 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
       {result && (
         <>
           <div className="worksheet-toolbar">
-            <button className="print-btn" onClick={print}>인쇄 / PDF 저장</button>
+            <button className="print-btn" onClick={print}>{result.list.length > 1 ? `전체 ${result.list.length}개 이어서 인쇄 / PDF` : '인쇄 / PDF 저장'}</button>
             <button className="print-btn outline" onClick={saveJson}>내용 JSON 저장</button>
             <span className="workbook-cost">
               {result.list.length > 1 ? `워크북 ${result.list.length}개 · ` : '이번 워크북 '}약 {result.cost.toLocaleString()}원 · 입력 {result.usage.input.toLocaleString()} / 출력 {result.usage.output.toLocaleString()} 토큰{result.retried ? ` · ${result.list.length > 1 ? `${result.retried}개 ` : ''}한 번 고쳐 받음` : ''}
             </span>
           </div>
+          {result.list.length > 1 && (
+            <div className="workbook-each">
+              <span>번호별로 따로:</span>
+              {result.list.map((d, i) => <button key={i} className="print-btn outline" onClick={() => printOne(d)}>{d.title}</button>)}
+            </div>
+          )}
           <p className="workbook-tip">인쇄 창에서 '배경 그래픽'을 켜야 색 꼬리표·밑줄 색이 나와요.</p>
           <iframe ref={frameRef} className="workbook-frame" title="워크북 미리보기" srcDoc={result.html} />
         </>
