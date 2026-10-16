@@ -297,36 +297,24 @@
       "why": "6번 기대 / 7번 too fast"
     },
     "grammar": [
-      [
-        "With technology (came / coming) the idea that innovation and novelty are intrinsic …",
-        "came",
-        "도치: 주어 the idea가 뒤로 → 동사 자리"
-      ],
-      [
-        "… hard to understand that this state of affairs (wasn’t / weren’t) the rule …",
-        "wasn’t",
-        "주어 this state of affairs는 단수"
-      ],
-      ["… most people expected the future (to be / being) much like the past.", "to be", "expect + O + to V"],
-      [
-        "… so often that they were not only perceptible but (expected / expecting).",
-        "expected",
-        "변화는 ‘기대되는’ 것 → 수동, perceptible과 짝(형용사 자리)"
-      ],
-      [
-        "… too profound, for normal people (to assimilate / assimilating) them.",
-        "to assimilate",
-        "too ~ for 의미상 주어 to V"
-      ]
+      {"s": 1, "target": "came", "wrong": "coming", "point": "부사구 도치", "why": "With technology가 앞에 나와 주어 the idea가 뒤로 → 동사 자리"},
+      {"s": 1, "target": "that", "wrong": "which", "point": "동격 that", "why": "the idea의 내용을 말하는 동격절, 뒤가 완전한 문장"},
+      {"s": 2, "target": "are", "wrong": "is", "point": "수 일치", "why": "주어는 Constant changes(복수), in ~ economics는 꾸미는 말"},
+      {"s": 2, "target": "wasn’t", "wrong": "weren’t", "point": "수 일치", "why": "주어 this state of affairs는 단수"},
+      {"s": 3, "target": "slow", "wrong": "slowly", "point": "보어 형용사", "why": "be동사 was의 보어 → 형용사"},
+      {"s": 3, "target": "to be", "wrong": "being", "point": "expect + O + to V", "why": "expect는 목적격 보어로 to부정사"},
+      {"s": 4, "target": "much less", "wrong": "much more", "point": "much less", "why": "앞이 부정(never) → much less(~는 말할 것도 없이)"},
+      {"s": 5, "target": "changed", "wrong": "was changed", "point": "자동사 수동태 X", "why": "change(바뀌다)는 여기서 목적어 없는 자동사"},
+      {"s": 5, "target": "perceptible", "wrong": "perceptibly", "point": "not only A but B 병렬", "why": "were의 보어, but 뒤 expected와 나란히 형용사"},
+      {"s": 6, "target": "Since", "wrong": "While", "point": "전치사·접속사", "why": "뒤가 명사구(the advent of technology) → 전치사 Since"},
+      {"s": 6, "target": "to bring", "wrong": "bringing", "point": "expect + O + to V", "why": "expect + 목적어 + to부정사"},
+      {"s": 7, "target": "to assimilate", "wrong": "assimilating", "point": "too ~ to V", "why": "too ~ for 의미상 주어 to V (너무 ~해서 …가 ~할 수 없다)"}
     ],
     "vocab": [
-      [
-        "Constant changes are so (ingrained / ignored) in our daily lives that …",
-        "ingrained",
-        "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"
-      ],
-      ["… changes were not only (perceptible / imperceptible) but expected.", "perceptible", "기대될 만큼 잦아졌다 → 느낄 수 있는"],
-      ["Since the (advent / adventure) of technology, …", "advent", "기술의 ‘출현’ 이후"]
+      {"s": 2, "target": "ingrained", "wrong": "ignored", "why": "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"},
+      {"s": 4, "target": "common", "wrong": "rare", "why": "옛날엔 미래가 나아진다는 생각이 흔하지 않았음 (never common, much less popular)"},
+      {"s": 6, "target": "advent", "wrong": "adventure", "why": "기술의 '출현' 이후"},
+      {"s": 7, "target": "fear", "wrong": "hope", "why": "However로 앞의 기대와 반대 → 두려워함"}
     ],
     "para": [
       [
