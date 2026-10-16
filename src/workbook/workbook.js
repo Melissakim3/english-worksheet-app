@@ -160,11 +160,15 @@ export function grammarPassage(d) {
 // 4-C 문장 넣기: 주어진 문장을 빼고, 남은 문장 사이에 ①~⑤ — 정답 자리가 주어진 문장 원래 자리와 같은지도 봄
 export function insertPassage(sentences, given) {
   const rest = sentences.filter((_, i) => i !== given - 1);
-  // 자리 후보 = 문장과 문장 사이 (원래 자리가 맨 끝이면 끝자리도). 5개를 넘으면 원래 자리가 가운데쯤 오도록 5개를 고름
+  // 자리 후보 = 문장과 문장 사이 (원래 자리가 맨 끝이면 끝자리도). 5개를 넘으면 원래 자리를 품는 5개를 고름
   const at = given - 1; // 원래 자리 = rest의 at번째 문장 앞 (rest.length면 맨 끝)
   const gaps = rest.map((_, i) => i).slice(1);
   if (at === rest.length) gaps.push(at);
-  const start = Math.min(Math.max(0, gaps.indexOf(at) - 2), Math.max(0, gaps.length - 5));
+  // 원래 자리를 품는 ①~⑤ 창 중 하나를 지문 글자로 고름 → 정답 번호가 늘 ③으로 몰리지 않음 (같은 지문이면 늘 같은 자리)
+  const k = gaps.indexOf(at);
+  const lo = Math.max(0, k - 4);
+  const hi = Math.max(lo, Math.min(k, gaps.length - 5));
+  const start = lo + (seeded(sentences.join(' '))() * (hi - lo + 1) | 0);
   const pick = gaps.slice(start, start + 5);
   const slot = (i) => { const k = pick.indexOf(i); return k >= 0 ? ` ( ${CIRCLE[k]} ) ` : (i && i < rest.length ? ' ' : ''); };
   const html = rest.map((s, i) => slot(i) + esc(s)).join('') + slot(rest.length).trimEnd();
