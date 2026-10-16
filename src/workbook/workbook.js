@@ -7,6 +7,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 // __밑줄__ → <u>밑줄</u> (요약 상자·한 줄 요지에서 핵심어 표시)
 const marked = (s) => esc(s).replace(/__(.+?)__/g, '<u>$1</u>');
 const CIRCLE = ['①', '②', '③', '④', '⑤'];
+// 4-C 문장 넣기는 7문장 이상일 때만 (주어진 문장을 뺀 뒤 6문장 이상이어야 ①~⑤ 자리). 짧은 지문은 4-C만 빼고 나머지는 그대로
+export const canInsert = (n) => n >= 7;
 // 같은 지문이면 늘 같은 자리 (generate.js와 같은 방식)
 function seeded(seed) {
   let h = 2166136261;
@@ -73,11 +75,11 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
     five(d?.lv4?.blank, '4-B');
     five(d?.lv5?.summary, '5-A');
     const ins = d?.lv4?.insert;
-    if (!ins) errs.push('4-C: 없음');
+    if (!canInsert(n)) { /* 짧은 지문: 4-C 없음 */ }
+    else if (!ins) errs.push('4-C: 없음');
     else {
       inRange(ins.given, '4-C given');
       if (ins.given === 1) errs.push('4-C: 첫 문장은 주어진 문장으로 쓰지 않음 (앞에 끼울 자리가 없음)');
-      if (n - 1 < 6) errs.push('4-C: 주어진 문장을 뺀 뒤 6문장 이상 있어야 ①~⑤ 자리를 만듦');
     }
     (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
     if (grammarInPassage(d?.lv5?.grammar) || grammarInPassage(d?.lv5?.vocab)) checkPassageMarks(d, errs);
@@ -158,11 +160,15 @@ export function grammarPassage(d) {
 // 4-C 문장 넣기: 주어진 문장을 빼고, 남은 문장 사이에 ①~⑤ — 정답 자리가 주어진 문장 원래 자리와 같은지도 봄
 export function insertPassage(sentences, given) {
   const rest = sentences.filter((_, i) => i !== given - 1);
-  // 자리 후보 = 문장과 문장 사이 (원래 자리가 맨 끝이면 끝자리도). 5개를 넘으면 원래 자리가 가운데쯤 오도록 5개를 고름
+  // 자리 후보 = 문장과 문장 사이 (원래 자리가 맨 끝이면 끝자리도). 5개를 넘으면 원래 자리를 품는 5개를 고름
   const at = given - 1; // 원래 자리 = rest의 at번째 문장 앞 (rest.length면 맨 끝)
   const gaps = rest.map((_, i) => i).slice(1);
   if (at === rest.length) gaps.push(at);
-  const start = Math.min(Math.max(0, gaps.indexOf(at) - 2), Math.max(0, gaps.length - 5));
+  // 원래 자리를 품는 ①~⑤ 창 중 하나를 지문 글자로 고름 → 정답 번호가 늘 ③으로 몰리지 않음 (같은 지문이면 늘 같은 자리)
+  const k = gaps.indexOf(at);
+  const lo = Math.max(0, k - 4);
+  const hi = Math.max(lo, Math.min(k, gaps.length - 5));
+  const start = lo + (seeded(sentences.join(' '))() * (hi - lo + 1) | 0);
   const pick = gaps.slice(start, start + 5);
   const slot = (i) => { const k = pick.indexOf(i); return k >= 0 ? ` ( ${CIRCLE[k]} ) ` : (i && i < rest.length ? ' ' : ''); };
   const html = rest.map((s, i) => slot(i) + esc(s)).join('') + slot(rest.length).trimEnd();
@@ -202,7 +208,7 @@ function flowPage(d) {
 
 function problemPages(d, has) {
   const { lv1, lv2, lv3, lv4, lv5, wrap } = d;
-  const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const ins = has('exam') && canInsert(d.sentences.length) && insertPassage(d.sentences, lv4.insert.given);
   const gIn = has('exam') && grammarInPassage(lv5.grammar);
   const vIn = has('exam') && grammarInPassage(lv5.vocab);
   const basic = () => `
@@ -240,9 +246,9 @@ ${OPTS(lv4.title.options)}
 ${Q('4-B', '빈칸 추론', '가장 적절한 것은?')}
 ${EN(lv4.blank.sentence)}
 ${OPTS(lv4.blank.options, true)}
-${Q('4-C', '문장 넣기', '주어진 문장이 들어갈 곳은?')}
+${ins ? `${Q('4-C', '문장 넣기', '주어진 문장이 들어갈 곳은?')}
 ${EN(d.sentences[lv4.insert.given - 1])}
-<div class="w-box en">${ins.html}</div>
+<div class="w-box en">${ins.html}</div>` : ''}
 
 ${LV(5, '변형까지 대비하기', '지문을 가리고 풀기')}
 ${Q('5-A', '요약문', '(A), (B)에 들어갈 말은?')}
@@ -277,7 +283,7 @@ function answerPage(d, has) {
   const A = (k, v) => `<div class="k">${k}</div><div class="v">${v}</div>`;
   const AL = (arr) => arr.map((v, i) => `<span>${i + 1}) ${v}</span>`).join('');
   const one = (q, opt = false) => `<span><b>${CIRCLE[q.answer - 1]}${opt ? ` ${esc(q.options[q.answer - 1])}` : ''}</b> ${esc(q.why || '')}</span>`;
-  const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const ins = has('exam') && canInsert(d.sentences.length) && insertPassage(d.sentences, lv4.insert.given);
   const basic = () => `
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
@@ -289,7 +295,7 @@ ${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`;
   const exam = () => `
 ${A('4-A', one(lv4.title))}
 ${A('4-B', one(lv4.blank, true))}
-${A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`)}
+${ins ? A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`) : ''}
 ${A('5-A', one(lv5.summary, true))}
 ${A('5-B', grammarInPassage(lv5.grammar)
     ? AL(grammarPassage(d).grammar.map((m) => `<b>${esc(m.target)}</b> ${esc(m.point)} — ${esc(m.why)}`))
@@ -310,25 +316,66 @@ ${A('5-D', AL(lv5.para.map(([, n, w]) => `<b>${n}번</b> ${esc(w)}`)))}`;
 // 글꼴: 기본은 Google Fonts (Noto Sans KR · Source Serif 4). 인터넷이 막힌 곳은 fontCss로 @font-face를 직접 넣음
 export const FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap">';
 
-//   parts: 넣을 구성 (안 주면 원래 4쪽)
-export function workbookHtml(d, { fontCss = '', parts } = {}) {
-  parts = parts || BASE_PARTS;
+// 워크북 하나 → 앞쪽(문제) html · 정답 쪽 html  (parts: 넣을 구성, 안 주면 원래 4쪽)
+function workbookBody(d, parts = BASE_PARTS) {
   const has = (p) => parts.includes(p);
   const errs = checkWorkbook(d, parts);
-  if (errs.length) throw new Error(`워크북 내용 확인:\n- ${errs.join('\n- ')}`);
+  if (errs.length) throw new Error(`워크북 내용 확인${d?.title ? ` (${d.title})` : ''}:\n- ${errs.join('\n- ')}`);
   // 문장 뜯어보기 → 흐름 지도 → 문제는 이어서, 정답은 새 쪽에서
   const front = [
     has('study') && studyPage(d),
     has('flow') && flowPage(d),
     (has('basic') || has('exam') || has('wrap')) && problemPages(d, has),
   ].filter(Boolean);
-  // 문장 뜯어보기 뒤에 다른 것이 오면 쪽을 넘김
-  const frontHtml = front.length ? `<section>${front.map((h, i) => (i === 0 && has('study') && front.length > 1 ? `${h}\n<div class="pb"></div>` : h)).join('')}</section>` : '';
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(d.title)} 워크북</title>${fontCss ? '' : FONT_LINK}<style>
+  // 문장 뜯어보기가 한 쪽을 넘으면 넘친 문장 바로 뒤에 흐름 지도가 이어짐 (빈 쪽 없이) — 넘치는 곳에는 '다음 쪽에 이어집니다' 표시 (CONT_SCRIPT)
+  const frontHtml = front.join('');
+  return { front: frontHtml, answers: answerPage(d, has) };
+}
+
+const doc = (title, fontCss, body) => `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)} 워크북</title>${fontCss ? '' : FONT_LINK}<style>
 ${fontCss}
 ${WORKBOOK_CSS}
 </style></head><body>
-${frontHtml}${answerPage(d, has)}</body></html>`;
+${body}<script>${CONT_SCRIPT}</script></body></html>`;
+
+// 문장 뜯어보기가 첫 쪽을 넘으면, 넘어가는 문장 바로 앞에 '▼ 다음 쪽에 이어집니다' 줄을 넣음
+//   인쇄 쪽(A4 − 위 6mm · 아래 9mm, 너비 192mm)과 같은 너비로 재서 정함. 다 되면 <html data-ready="1"> (PDF 스크립트 · 앱 인쇄가 기다림)
+const CONT_SCRIPT = `(async () => {
+  try { await document.fonts.ready; } catch (e) {}
+  const root = document.documentElement;
+  const keep = root.style.width;
+  root.style.width = '192mm';
+  const PAGE = 282 * 96 / 25.4, MARK = 22, y = (el) => el.getBoundingClientRect().top + window.scrollY;
+  const first = document.querySelector('section');
+  for (const t of document.querySelectorAll('table.study')) {
+    const sec = t.closest('section');
+    const top = !sec || sec === first ? 0 : y(sec);
+    const rows = [...t.tBodies[0].rows];
+    const bottom = (r) => r.getBoundingClientRect().bottom + window.scrollY - top;
+    // 정말 넘치는 첫 문장(i) 앞에 표시. 표시 줄이 들어갈 자리가 없으면 한 문장 앞으로
+    let i = rows.findIndex((r) => bottom(r) > PAGE);
+    if (i > 1 && bottom(rows[i - 1]) > PAGE - MARK) i -= 1;
+    if (i > 0) {
+      const tr = document.createElement('tr');
+      tr.className = 'cont';
+      tr.innerHTML = '<td colspan="3">▼ 다음 쪽에 이어집니다 (' + (i + 1) + '번 문장부터)</td>';
+      rows[i].before(tr);
+    }
+  }
+  root.style.width = keep;
+  root.dataset.ready = '1';
+})();`;
+
+export function workbookHtml(d, { fontCss = '', parts } = {}) {
+  const { front, answers } = workbookBody(d, parts);
+  return doc(d.title, fontCss, `${front ? `<section>${front}</section>` : ''}${answers}`);
+}
+
+// 여러 지문 워크북을 한 문서로 (인쇄 한 번 · PDF 하나) — 지문마다 새 쪽, 정답은 맨 뒤에 지문 차례대로 모음
+export function workbooksHtml(list, { fontCss = '', parts, title = '' } = {}) {
+  const bodies = list.map((d) => workbookBody(d, parts));
+  const fronts = bodies.map((b, i) => (b.front ? `<section class="${i ? 'answers-start' : ''}">${b.front}</section>` : '')).join('\n');
+  return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${bodies.map((b) => b.answers).join('\n')}`);
 }
 
 export const WORKBOOK_CSS = `
@@ -343,8 +390,10 @@ section{break-after:auto}
 .stage{padding-bottom:2px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:10.5pt;border-bottom:1.3px solid #333333;padding:4px 0px 6px;margin:4px 0px 0px}
 .stage span{display:inline-block;margin-right:6px;border:1.3px solid #222222;font-size:7pt;letter-spacing:2px;padding:1px 7px;margin:0px;font-family:"Liberation Mono", "Courier New", monospace}
 table.study tr{break-inside:avoid}
+table.study tr.cont{break-after:page}
+table.study tr.cont td{border:none;text-align:right;font-size:7.6pt;font-weight:700;color:#222222;padding:4px 4px 0px}
 table.study{width:100%;border-collapse:collapse;table-layout:fixed}
-table.study th{text-align:left;font-size:6.5pt;color:#888888;font-weight:500;padding:12px 6px 5px;border-bottom:1.3px solid #222222}
+table.study th{text-align:left;font-size:6.5pt;color:#5c5c5c;font-weight:500;padding:12px 6px 5px;border-bottom:1.3px solid #222222}
 table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5px 6px}
 .tr{border-bottom:1px dotted #cfcfcf;padding-bottom:5px;margin-bottom:5px}
 .tag{display:inline-block;font-weight:700;border-radius:2px;font-size:6pt !important;padding:1px 4px !important;margin-right:6px !important;color:#a5770a !important;background:#fcefc7 !important}
@@ -359,16 +408,16 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .wb .cols > .w-lv:first-child{margin-top:0px}
 .w-lv b{font-size:6.4pt;letter-spacing:1px;border:0.8px solid #111111;padding:0px 4px;line-height:1.45}
 .w-lv span{font-size:9pt;font-weight:700}
-.w-lv i{margin-left:auto;font-style:normal;color:#999999;font-size:6.6pt}
+.w-lv i{margin-left:auto;font-style:normal;color:#666666;font-size:6.6pt}
 .w-q{display:flex;align-items:baseline;gap:6px;margin:9px 0px 3px;break-after:avoid}
 .w-q b{font-size:7.9pt}
-.w-q span{color:#8a8a8a;font-size:6.8pt;margin-left:3px}
+.w-q span{color:#5c5c5c;font-size:6.8pt;margin-left:3px}
 .w-list{list-style:none;margin:0px;padding:0px}
 .w-list li{display:flex;align-items:baseline;gap:6px;padding:1.6px 0px;break-inside:avoid}
-.wb .n{color:#aaaaaa;font-size:6.3pt;flex:0 0 7px;text-align:right}
+.wb .n{color:#777777;font-size:6.3pt;flex:0 0 7px;text-align:right}
 .w-list .x{flex:1 1 auto;min-width:0px}
 .w-list.nw .x{white-space:nowrap;overflow:hidden;text-overflow:clip}
-.w-list .m{flex:0 0 auto;color:#b0b0b0;font-size:6.6pt;margin-left:6px;white-space:nowrap}
+.w-list .m{flex:0 0 auto;color:#7a7a7a;font-size:6.6pt;margin-left:6px;white-space:nowrap}
 .w-list.en .x{font-family:"Source Serif 4", serif;font-size:8pt}
 .w-list.tall li{padding:7px 0px 1px}
 .w-fill{flex:1 1 auto;border-bottom:0.6px solid #c6c6c6;min-width:24px;align-self:stretch}
@@ -379,7 +428,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-box.c{text-align:center;white-space:nowrap}
 .w-box.en{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.55;text-align:justify}
 .w-sub{margin:5px 0px 2px}
-.w-sub .g{color:#8a8a8a;font-size:6.8pt;margin-left:4px}
+.w-sub .g{color:#5c5c5c;font-size:6.8pt;margin-left:4px}
 .keep{break-after:avoid}
 .w-write{display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-items:end;margin:2px 0px 4px}
 .w-write span:not(.w-fill){font-weight:700;font-size:7.2pt}
@@ -397,7 +446,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-gp{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.85;text-align:justify;margin:2px 0px 4px}
 .w-gp .gp{font-weight:600}
 .w-gp .gv{font-weight:600;color:#2a5d8f}
-.w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#777777;margin-left:1px}
+.w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#4d4d4d;margin-left:1px}
 .w-chk{border-top:0.8px solid #111111;margin-top:14px;padding-top:1px;break-inside:avoid}
 .w-chk ol{list-style:none;padding:0px;margin:3px 0px 0px;column-count:2;column-gap:9mm}
 .w-chk li{font-size:7pt;padding:2px 0px;break-inside:avoid;display:flex;gap:6px}
@@ -408,7 +457,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v b{font-weight:700}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
-.fmap .fl i{font-style:normal;font-size:6pt;color:#999999}
+.fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
 .fmap .ft{font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.45;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
 .fmap .ft:nth-last-child(1){border-bottom:none}
 .fmap .fl{border-left:2.5px solid;padding:2px 0px 2px 6px;display:flex;flex-direction:column;justify-content:center;line-height:1.25;border-bottom:0.5px solid #e6e6e6}
@@ -416,39 +465,39 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .core{border:1px solid #333333;border-radius:3px;padding:4px 12px;margin-bottom:12px;break-inside:avoid}
 .core div{display:grid;grid-template-columns:52px 1fr;align-items:baseline;padding:2px 0px;border-bottom:0.5px solid #e6e6e6}
 .core div:last-child{border-bottom:none}
-.core b{font-size:7pt;letter-spacing:1px;color:#555555}
+.core b{font-size:7pt;letter-spacing:1px;color:#3a3a3a}
 .core span{font-size:8.2pt;font-weight:500}
 .core u{text-decoration-thickness:1px;text-underline-offset:3px}
 table.study th:nth-child(1){width:53% !important}
 table.study th:nth-child(2){width:28% !important}
 table.study th:nth-child(3){width:19% !important}
 table.study td.en{font-family:"Source Serif 4", serif;width:auto;padding:5px 12px 4px 6px;color:#111111;line-height:3 !important;font-size:10pt !important}
-table.study td.ko{width:auto;color:#555555;padding-left:5px;padding-right:8px;font-size:6.6pt !important;line-height:1.7 !important}
+table.study td.ko{width:auto;color:#3a3a3a;padding-left:5px;padding-right:8px;font-size:6.6pt !important;line-height:1.7 !important}
 table.study td.ko .tr{border-bottom:none !important;margin:0px !important;padding:0px !important}
 .lgin{margin-top:6px;padding-top:5px;border-top:1px dotted #d6d6d6;font-size:6.5pt;line-height:1.6;color:#333333}
 .lgin div{margin-bottom:4px}
-.wg{display:grid;grid-template-columns:7px 66px 1fr;gap:0px 3px;line-height:1.5;margin-top:7px;align-items:baseline}
+.wg{display:grid;grid-template-columns:8px 70px 1fr;gap:0px 3px;line-height:1.38;margin-top:5px;align-items:baseline}
 .wg:first-child{margin-top:0px}
-.wg .e{font-size:6.4pt;color:#222222;white-space:nowrap}
-.wg b.e{font-family:"Source Serif 4", serif;font-weight:600;font-size:6.8pt;color:#111111}
-.wg .k{font-size:5.9pt;color:#888888;word-break:keep-all}
+.wg .e{font-size:7pt;color:#111111;overflow-wrap:anywhere}
+.wg b.e{font-family:"Source Serif 4", serif;font-weight:600;font-size:7.4pt;color:#111111}
+.wg .k{font-size:6.6pt;color:#333333;word-break:keep-all;overflow-wrap:anywhere}
 .wg .hk{align-self:baseline}
-.wg .lb{font-size:5.6pt;font-weight:700}
-.wg .lb.syn,.wg .e.syn{color:#2e7d4a}
-.wg .lb.ant,.wg .e.ant{color:#c0392b}
+.wg .lb{font-size:6.2pt;font-weight:700}
+.wg .lb.syn,.wg .e.syn{color:#1d6b3a}
+.wg .lb.ant,.wg .e.ant{color:#b02a1e}
 .wg .lb.syn:not(:empty),.wg .lb.ant:not(:empty){padding-top:0px}
 table.study td.wd{border-left:1px dotted #e0e0e0;padding:8px 0px 6px 8px !important}
 table.study td.en .n{display:inline-block;width:13px;height:13px;line-height:12px;border:1px solid #222222;border-radius:50%;text-align:center;font-family:"Noto Sans KR", sans-serif;font-size:7pt !important;font-weight:700 !important;color:#111111 !important;margin-right:6px !important;vertical-align:1px !important}
 ol.easy{list-style:none;padding:0px;margin:4px 0px 0px;column-count:1 !important}
 ol.easy li{display:grid;grid-template-columns:16px 1fr 34px;align-items:baseline;padding:3px 0px;border-bottom:0.5px solid #ececec;line-height:1.5;font-size:7.8pt !important}
 ol.easy .c{display:inline-block;width:11px;height:11px;line-height:10px;border:0.8px solid #222222;border-radius:50%;text-align:center;font-size:6pt;font-weight:700}
-ol.easy .x{text-align:right;color:#999999;font-size:6.4pt}
+ol.easy .x{text-align:right;color:#666666;font-size:6.4pt}
 .tt{margin-top:6px;border:0.6px solid #9a9a9a;padding:3px 10px}
 .tt div{display:grid;grid-template-columns:40px auto 1fr;column-gap:12px;align-items:baseline;padding:2.5px 0px;border-bottom:0.5px solid #ececec}
 .tt div:last-child{border-bottom:none}
-.tt b{font-size:6.6pt;letter-spacing:1px;color:#555555}
+.tt b{font-size:6.6pt;letter-spacing:1px;color:#3a3a3a}
 .tt .en{font-family:"Source Serif 4", serif;font-size:8.6pt;font-weight:600;color:#111111}
-.tt .ko{font-size:7pt;color:#777777}
+.tt .ko{font-size:7pt;color:#4d4d4d}
 .tt .k1{grid-column:2 / 4;font-size:7.8pt;color:#222222}
 .tt u{text-decoration-thickness:1px;text-underline-offset:3px}
 `;
