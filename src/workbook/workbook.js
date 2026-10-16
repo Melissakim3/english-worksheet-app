@@ -7,6 +7,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 // __밑줄__ → <u>밑줄</u> (요약 상자·한 줄 요지에서 핵심어 표시)
 const marked = (s) => esc(s).replace(/__(.+?)__/g, '<u>$1</u>');
 const CIRCLE = ['①', '②', '③', '④', '⑤'];
+// 4-C 문장 넣기는 7문장 이상일 때만 (주어진 문장을 뺀 뒤 6문장 이상이어야 ①~⑤ 자리). 짧은 지문은 4-C만 빼고 나머지는 그대로
+export const canInsert = (n) => n >= 7;
 // 같은 지문이면 늘 같은 자리 (generate.js와 같은 방식)
 function seeded(seed) {
   let h = 2166136261;
@@ -73,11 +75,11 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
     five(d?.lv4?.blank, '4-B');
     five(d?.lv5?.summary, '5-A');
     const ins = d?.lv4?.insert;
-    if (!ins) errs.push('4-C: 없음');
+    if (!canInsert(n)) { /* 짧은 지문: 4-C 없음 */ }
+    else if (!ins) errs.push('4-C: 없음');
     else {
       inRange(ins.given, '4-C given');
       if (ins.given === 1) errs.push('4-C: 첫 문장은 주어진 문장으로 쓰지 않음 (앞에 끼울 자리가 없음)');
-      if (n - 1 < 6) errs.push('4-C: 주어진 문장을 뺀 뒤 6문장 이상 있어야 ①~⑤ 자리를 만듦');
     }
     (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
     if (grammarInPassage(d?.lv5?.grammar) || grammarInPassage(d?.lv5?.vocab)) checkPassageMarks(d, errs);
@@ -202,7 +204,7 @@ function flowPage(d) {
 
 function problemPages(d, has) {
   const { lv1, lv2, lv3, lv4, lv5, wrap } = d;
-  const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const ins = has('exam') && canInsert(d.sentences.length) && insertPassage(d.sentences, lv4.insert.given);
   const gIn = has('exam') && grammarInPassage(lv5.grammar);
   const vIn = has('exam') && grammarInPassage(lv5.vocab);
   const basic = () => `
@@ -240,9 +242,9 @@ ${OPTS(lv4.title.options)}
 ${Q('4-B', '빈칸 추론', '가장 적절한 것은?')}
 ${EN(lv4.blank.sentence)}
 ${OPTS(lv4.blank.options, true)}
-${Q('4-C', '문장 넣기', '주어진 문장이 들어갈 곳은?')}
+${ins ? `${Q('4-C', '문장 넣기', '주어진 문장이 들어갈 곳은?')}
 ${EN(d.sentences[lv4.insert.given - 1])}
-<div class="w-box en">${ins.html}</div>
+<div class="w-box en">${ins.html}</div>` : ''}
 
 ${LV(5, '변형까지 대비하기', '지문을 가리고 풀기')}
 ${Q('5-A', '요약문', '(A), (B)에 들어갈 말은?')}
@@ -277,7 +279,7 @@ function answerPage(d, has) {
   const A = (k, v) => `<div class="k">${k}</div><div class="v">${v}</div>`;
   const AL = (arr) => arr.map((v, i) => `<span>${i + 1}) ${v}</span>`).join('');
   const one = (q, opt = false) => `<span><b>${CIRCLE[q.answer - 1]}${opt ? ` ${esc(q.options[q.answer - 1])}` : ''}</b> ${esc(q.why || '')}</span>`;
-  const ins = has('exam') && insertPassage(d.sentences, lv4.insert.given);
+  const ins = has('exam') && canInsert(d.sentences.length) && insertPassage(d.sentences, lv4.insert.given);
   const basic = () => `
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
@@ -289,7 +291,7 @@ ${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`;
   const exam = () => `
 ${A('4-A', one(lv4.title))}
 ${A('4-B', one(lv4.blank, true))}
-${A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`)}
+${ins ? A('4-C', `<span><b>${CIRCLE[ins.answer - 1]}</b> ${esc(lv4.insert.why || '')}</span>`) : ''}
 ${A('5-A', one(lv5.summary, true))}
 ${A('5-B', grammarInPassage(lv5.grammar)
     ? AL(grammarPassage(d).grammar.map((m) => `<b>${esc(m.target)}</b> ${esc(m.point)} — ${esc(m.why)}`))
