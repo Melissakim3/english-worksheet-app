@@ -4,7 +4,7 @@ import {
   analyzeStage1, analyzeStage2, analyzeStage4, analyzeStage5,
   analyzeStage6, analyzeStage7, analyzeStage8, analyzeStage9
 } from './utils/prompts.js'
-import { MODELS, getSavedModelId, saveModelId } from './utils/ai.js'
+import { MODELS, getSavedModelId, saveModelId, keyStatus } from './utils/ai.js'
 import PrintControls, { loadSettings, DEFAULT_SETTINGS } from './components/PrintControls.jsx'
 import { exportToWord } from './utils/exportWord.js'
 import { extractTextFromPDF, splitPassagesWithAI, splitByDivider } from './utils/pdfExtract.js'
@@ -147,12 +147,13 @@ export default function App() {
   const analyze = async () => {
     if (!passage.trim()) { setError('지문을 입력해주세요.'); return }
     const model = MODELS.find(m => m.id === modelId)
-    // 선택한 모델의 provider에 해당하는 키만 확인
-    if (model?.provider === 'anthropic' && !import.meta.env.VITE_ANTHROPIC_API_KEY) {
-      setError('Anthropic API 키가 없습니다. GPT 모델을 선택하거나 Anthropic 키를 설정해주세요.'); return
+    // 선택한 모델의 provider에 해당하는 키만 확인 (키는 서버에 있음 — 있는지만 물어봄)
+    const keys = await keyStatus()
+    if (model?.provider === 'anthropic' && !keys.anthropic) {
+      setError('Anthropic API 키가 없습니다. GPT 모델을 선택하거나 Vercel에 ANTHROPIC_API_KEY를 넣어 주세요.'); return
     }
-    if (model?.provider === 'openai' && !import.meta.env.VITE_OPENAI_API_KEY) {
-      setError('OpenAI API 키가 없습니다. Claude 모델을 선택하거나 OpenAI 키를 설정해주세요.'); return
+    if (model?.provider === 'openai' && !keys.openai) {
+      setError('OpenAI API 키가 없습니다. Claude 모델을 선택하거나 Vercel에 OPENAI_API_KEY를 넣어 주세요.'); return
     }
 
     setError(''); setLoading(true); setProgress([]); setResults({})
@@ -227,7 +228,7 @@ export default function App() {
   const analyzeAll = async () => {
     if (multiPassages.length === 0) return
     const model = MODELS.find(m => m.id === modelId)
-    if (model?.provider === 'anthropic' && !import.meta.env.VITE_ANTHROPIC_API_KEY) {
+    if (model?.provider === 'anthropic' && !(await keyStatus()).anthropic) {
       setError('API 키가 없습니다.'); return
     }
     setLoading(true)

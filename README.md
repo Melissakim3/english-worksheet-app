@@ -18,17 +18,21 @@ cp .env.example .env
 
 `.env` 파일:
 ```
-VITE_ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
+OPENAI_API_KEY=sk-xxxxxxxxxxxxx
+APP_PASSWORD=선생님만_아는_비밀번호
 ```
+
+> ⚠️ 키 이름에 **`VITE_`를 붙이지 마세요.** `VITE_`가 붙은 값은 화면 파일에 그대로 들어가서 주소를 아는 누구나 키를 꺼낼 수 있어요. AI는 서버 함수 `api/ai.js`가 부르고, 키는 서버에만 있어요 (2026-10-19).
 
 > **API 키 발급**: https://console.anthropic.com
 
 ### 3. 개발 서버 실행
 ```bash
-npm run dev
+npx vercel dev
 ```
 
-브라우저에서 http://localhost:5173 을 열면 됩니다.
+AI · PDF는 서버 함수(`api/`)라서 `vercel dev`로 띄워야 돼요 (`npm run dev`는 화면만).
 
 ---
 
@@ -38,7 +42,7 @@ npm run dev
 1. 이 폴더를 GitHub 레포지토리에 올리기
 2. https://vercel.com 접속 → New Project
 3. GitHub 레포 선택 → Import
-4. **Environment Variables** 섹션에서 `VITE_ANTHROPIC_API_KEY` 추가
+4. **Environment Variables** 섹션에서 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY` · `APP_PASSWORD` 추가 (`VITE_` 붙이지 않기)
 5. Deploy 클릭
 
 ### 방법 2 — Vercel CLI
@@ -46,7 +50,8 @@ npm run dev
 npm install -g vercel
 vercel
 # 환경변수 추가
-vercel env add VITE_ANTHROPIC_API_KEY
+vercel env add ANTHROPIC_API_KEY
+vercel env add APP_PASSWORD
 ```
 
 ---

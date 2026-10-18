@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { workbookHtml, workbooksHtml, PARTS, BASE_PARTS } from '../workbook/workbook.js'
 import { generateWorkbook } from '../workbook/generate.js'
 import { makeZip, safeName } from '../utils/zip.js'
+import { getPassword, askPassword } from '../utils/ai.js'
 
 // 고른 구성은 다음에도 그대로 (브라우저에 기억)
 const PARTS_KEY = 'workbookParts'
@@ -19,7 +20,10 @@ const loadPrefix = () => { try { return localStorage.getItem(PREFIX_KEY) ?? '[Ba
 
 // 서버(api/pdf.js)가 크롬으로 A4 PDF를 만들어 줌 — 워크북 내용(json)만 보냄
 async function fetchPdf(body) {
-  const r = await fetch('/api/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const send = (pw) => fetch('/api/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-app-password': encodeURIComponent(pw) }, body: JSON.stringify(body) })
+  const used = getPassword()
+  let r = await send(used)
+  if (r.status === 401 && (getPassword() !== used || askPassword())) r = await send(getPassword())
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `PDF 서버 오류 (${r.status})`)
   return new Uint8Array(await r.arrayBuffer())
 }

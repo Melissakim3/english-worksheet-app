@@ -1,4 +1,5 @@
-import { MODELS } from '../utils/ai.js'
+import { useEffect, useState } from 'react'
+import { MODELS, keyStatus } from '../utils/ai.js'
 
 export default function ModelSelector({ selectedId, onChange }) {
   const selected = MODELS.find(m => m.id === selectedId) || MODELS[0]
@@ -35,19 +36,22 @@ export default function ModelSelector({ selectedId, onChange }) {
       </div>
 
       <div className="model-key-row">
-        <KeyStatus label="Anthropic Key" envKey="VITE_ANTHROPIC_API_KEY" />
-        <KeyStatus label="OpenAI Key" envKey="VITE_OPENAI_API_KEY" />
+        <KeyStatus label="Anthropic Key" which="anthropic" />
+        <KeyStatus label="OpenAI Key" which="openai" />
       </div>
     </div>
   )
 }
 
-function KeyStatus({ label, envKey }) {
-  const hasKey = Boolean(import.meta.env[envKey])
+// 키는 서버(Vercel 환경변수)에만 있음 — 있는지만 물어봄
+function KeyStatus({ label, which }) {
+  const [hasKey, setHasKey] = useState(null)
+  useEffect(() => { keyStatus().then((k) => setHasKey(Boolean(k[which]))) }, [which])
+  if (hasKey === null) return <div className="key-status"><span className="key-dot" />{label}: 확인 중…</div>
   return (
     <div className={`key-status ${hasKey ? 'key-ok' : 'key-missing'}`}>
       <span className="key-dot" />
-      {label}: {hasKey ? '설정됨 ✓' : '미설정 — .env 확인 필요'}
+      {label}: {hasKey ? '설정됨 ✓' : '미설정 — Vercel 환경변수 확인 필요'}
     </div>
   )
 }
