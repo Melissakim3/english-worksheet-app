@@ -4,6 +4,7 @@
 import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer-core'
 import { workbookHtml, workbooksHtml } from '../src/workbook/workbook.js'
+import { passwordOk } from './ai.js'
 
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com']
 // 글꼴은 TTF로 (웹 글꼴 woff2로 찍으면 PDF 글자 간격이 어긋남 — cm-variant docs/workbook.md). Google Fonts에 옛 브라우저처럼 물으면 TTF 주소를 줌
@@ -61,6 +62,7 @@ export async function renderPdf(html) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST만 돼요' }); return }
+  if (!passwordOk(req)) { res.status(401).json({ error: '비밀번호가 필요해요' }); return }
   let html
   try {
     html = htmlFor(typeof req.body === 'string' ? JSON.parse(req.body) : req.body, await fontCss())

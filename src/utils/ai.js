@@ -1,50 +1,5 @@
-// 지원 모델 목록 — 여기서 추가/제거 가능
-export const MODELS = [
-  {
-    id: 'claude-haiku-4-5-20251001',
-    label: 'Claude Haiku 4.5',
-    provider: 'anthropic',
-    note: '빠름 · 저렴 · 약 70원/지문',
-    badge: '⚡ 추천',
-  },
-  {
-    id: 'claude-sonnet-4-5-20251101',
-    label: 'Claude Sonnet 4.5',
-    provider: 'anthropic',
-    note: '고품질 · 수능 최적 · 약 200원/지문',
-    badge: '🏆 최고품질',
-  },
-  {
-    id: 'claude-sonnet-4-20250514',
-    label: 'Claude Sonnet 4',
-    provider: 'anthropic',
-    note: '균형 · 약 200원/지문',
-    badge: '',
-  },
-  {
-    id: 'gpt-4.1-mini',
-    label: 'GPT-4.1 mini',
-    provider: 'openai',
-    note: '가성비 최고 · 약 35원/지문',
-    badge: '💰 가성비',
-  },
-  {
-    id: 'gpt-4.1',
-    label: 'GPT-4.1',
-    provider: 'openai',
-    note: '고성능 · 약 130원/지문',
-    badge: '',
-  },
-  {
-    id: 'gpt-4.1-nano',
-    label: 'GPT-4.1 nano',
-    provider: 'openai',
-    note: '초저가 · 약 10원/지문',
-    badge: '',
-  },
-]
-
-export const DEFAULT_MODEL_ID = 'claude-haiku-4-5-20251001'
+import { DEFAULT_MODEL_ID } from './models.js'
+export { MODELS, DEFAULT_MODEL_ID } from './models.js'
 
 // ── 저장/불러오기 (localStorage) ──────────────────────
 export function getSavedModelId() {
@@ -56,79 +11,41 @@ export function saveModelId(id) {
 }
 
 // ── 공통 호출 함수 ─────────────────────────────────────
+// AI는 서버(api/ai.js)가 부름 — 키는 서버에만 있고 화면 파일에는 없음 (2026-10-19)
 // opts.maxTokens: 긴 답(워크북 등)일 때 늘림 · opts.withUsage: { data, usage:{input, output} }로 돌려줌 (비용 계산용)
 export async function callAI(systemPrompt, userPrompt, modelId, opts = {}) {
-  const model = MODELS.find(m => m.id === modelId) || MODELS[0]
-
-  if (model.provider === 'anthropic') {
-    return callClaude(systemPrompt, userPrompt, model.id, opts)
-  } else {
-    return callOpenAI(systemPrompt, userPrompt, model.id, opts)
-  }
+  const { maxTokens = 4096, withUsage = false } = opts
+  const send = (pw) => fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-app-password': encodeURIComponent(pw) },
+    body: JSON.stringify({ system: systemPrompt, user: userPrompt, model: modelId, maxTokens }),
+  })
+  const used = getPassword()
+  let res = await send(used)
+  // 여러 단계가 한꺼번에 돌 때 비밀번호를 한 번만 묻게: 그새 다른 호출이 받아 뒀으면 그걸로 다시
+  if (res.status === 401 && (getPassword() !== used || askPassword())) res = await send(getPassword())
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || `AI 오류 (${res.status})`)
+  if (withUsage) return { data: parseJSON(data.text), usage: data.usage || { input: 0, output: 0 } }
+  return parseJSON(data.text)
 }
 
-// ── Anthropic API ──────────────────────────────────────
-async function callClaude(systemPrompt, userPrompt, modelId, { maxTokens = 4096, withUsage = false } = {}) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY가 .env에 없습니다.')
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: modelId,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `Anthropic API 오류 (${res.status})`)
-  }
-
-  const data = await res.json()
-  const text = data.content.map(b => b.text || '').join('')
-  if (withUsage) return { data: parseJSON(text), usage: { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 } }
-  return parseJSON(text)
+// ── 앱 비밀번호 (Vercel 환경변수 APP_PASSWORD를 정했을 때만 물음) ──
+export function getPassword() {
+  try { return localStorage.getItem('ws_pw') || '' } catch { return '' }
+}
+export function askPassword() {
+  const pw = window.prompt('앱 비밀번호를 넣어 주세요')
+  if (!pw) return false
+  try { localStorage.setItem('ws_pw', pw.trim()) } catch { /* 무시 */ }
+  return true
 }
 
-// ── OpenAI API ─────────────────────────────────────────
-async function callOpenAI(systemPrompt, userPrompt, modelId, { maxTokens = 4096, withUsage = false } = {}) {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-  if (!apiKey) throw new Error('VITE_OPENAI_API_KEY가 .env에 없습니다.')
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelId,
-      max_tokens: maxTokens,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `OpenAI API 오류 (${res.status})`)
-  }
-
-  const data = await res.json()
-  const text = data.choices?.[0]?.message?.content || ''
-  if (withUsage) return { data: parseJSON(text), usage: { input: data.usage?.prompt_tokens || 0, output: data.usage?.completion_tokens || 0 } }
-  return parseJSON(text)
+// 서버에 키가 있는지 (값은 안 옴)
+let statusP = null
+export function keyStatus() {
+  statusP ||= fetch('/api/ai').then((r) => r.json()).catch(() => ({ anthropic: false, openai: false }))
+  return statusP
 }
 
 // ── JSON 파싱 헬퍼 ─────────────────────────────────────
