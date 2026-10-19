@@ -277,10 +277,11 @@ function flowPage(d) {
   const legend = Object.keys(spans).length
     ? `<em class="fm-legend"><u class="fm-blank">빈칸</u> <u class="fm-grammar">어법</u> <u class="fm-write">서술형</u> 나올 곳${newBasic(d) ? ' · ㉠ 지칭(2-A)' : ''}</em>`
     : '';
+  // 흐름 지도는 통째로: 남은 자리에 다 들어가면 바로 이어 붙이고, 안 들어가면 남은 자리는 비우고 다음 쪽에서 시작
   return `
-<div class="stage first"><span>STAGE 2</span>흐름 지도${legend}<em class="pname">${T}</em></div>
+<div class="flowblock"><div class="stage first"><span>STAGE 2</span>흐름 지도${legend}<em class="pname">${T}</em></div>
 <div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map(marked1).join(' ')}</div>`).join('')}</div>
-<div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div>
+<div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div></div>
 `;
 }
 
@@ -586,6 +587,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-box.chips b{margin-right:4px;font-size:6.8pt}
 .w-frame{border:0.6px solid #9a9a9a;padding:6px 9px;margin:3px 0px 5px;line-height:2.1;break-inside:avoid}
 .w-frame .slot{display:inline-block;min-width:78px;border-bottom:0.8px solid #444444;margin:0px 3px;height:12px;vertical-align:-2px}
+.flowblock{break-inside:avoid}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
