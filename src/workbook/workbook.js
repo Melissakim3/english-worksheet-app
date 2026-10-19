@@ -35,14 +35,13 @@ export const PARTS = [
 export const BASE_PARTS = ['study', 'flow', 'basic', 'exam', 'wrap'];
 
 // 2쪽 새 모양 (2026-10-19 선생님): 흐름 지도에 표시(□ 빈칸 · 점선 어법 · 밑줄 서술형 · ㉠ 지칭),
-//   2-B 흐름 배열(쉬운 말 카드 순서 + 역할) · 3-A 핵심어(보기 상자) · 3-B 내 말로 한 줄(틀 문장) · 3-C 연결어(보기, 진짜 연결어만)
-//   lv2.order가 있으면 새 모양, 없으면 예전 모양 그대로
-export const newBasic = (d) => Array.isArray(d?.lv2?.order);
+//   2-B 순서 배열(모든 문장의 쉬운 말을 섞어서 · 역할은 뺌) · 3-A 핵심어(보기 상자) · 3-B 내 말로 한 줄(틀 문장). 연결어 문제는 뺌
+//   □ 빈칸 기준: 주제·요지에 바로 이어지고, 다른 문장에 근거(why: 'N번 …')가 있는 말만 — 근거를 못 대면 네모 X
+//   lv3.keys가 있으면 새 모양, 없으면 예전 모양 그대로
+export const newBasic = (d) => !!d?.lv3?.keys;
 const REF_MARK = '㉠㉡㉢㉣㉤㉥㉦';
 const FMARK_RANGE = { blank: [2, 4], grammar: [3, 6], write: [1, 2] };
 const FMARK_NAME = { blank: '빈칸', grammar: '어법', write: '서술형' };
-export const CONNECTORS = ['However', 'For example', 'For instance', 'Therefore', 'Thus', 'In fact', 'In other words', 'Instead', 'Moreover', 'As a result', 'In addition', 'On the other hand', 'Similarly', 'But', 'Yet', 'Then', 'Indeed', 'Rather'];
-const CONN_ROLES = ['대조', '예시', '결과', '강조', '추가', '바꿔 말하기'];
 // 흐름 지도에 표시할 자리 (지칭 + 표시) — 문장마다 [시작, 끝, 종류]
 function flowSpans(d) {
   const out = {};
@@ -53,15 +52,8 @@ function flowSpans(d) {
   };
   if (newBasic(d)) {
     (d.lv2.refs || []).forEach((r, i) => add(r.s, r.target, 'ref', { no: REF_MARK[i] }));
-    // 3-C 연결어 자리는 흐름 지도에서 빈칸으로 (답이 보이지 않게)
-    (d.lv3?.conn || []).forEach((c, i) => { if (new RegExp(`^${c.answer}\\b`).test(d.sentences[c.s - 1] || '')) (out[c.s] ||= []).push({ at: [0, c.answer.length], kind: 'conn', no: CIRCLE[i] }); });
   }
-  const blankAnswer = d.lv4?.blank?.options?.[d.lv4.blank.answer - 1];
-  for (const m of d.fmarks || []) {
-    // 4-B 빈칸 정답 낱말은 네모로 묶지 않음 (답이 보이므로)
-    if (m.kind === 'blank' && blankAnswer && String(m.target).toLowerCase().includes(String(blankAnswer).toLowerCase())) continue;
-    add(m.s, m.target, m.kind);
-  }
+  for (const m of d.fmarks || []) add(m.s, m.target, m.kind);
   return out;
 }
 
@@ -116,22 +108,19 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
         if (!(m.kind in count)) return errs.push(`흐름 지도 표시 ${i + 1}: kind는 blank · grammar · write`);
         count[m.kind]++;
         place(m.s, m.target, `흐름 지도 ${FMARK_NAME[m.kind]} 표시`);
+        if (m.kind === 'blank') {
+          const k = Number((String(m.why || '').match(/(\d+)\s*번/) || [])[1]);
+          if (!k || k === m.s || k > n) errs.push(`흐름 지도 빈칸 "${m.target}": why에 다른 문장 근거('N번 …')가 있어야 함`);
+        }
       });
       for (const [k, [lo, hi]] of Object.entries(FMARK_RANGE)) if (count[k] < lo || count[k] > hi) errs.push(`흐름 지도: ${FMARK_NAME[k]} 표시는 ${lo}~${hi}개 (지금 ${count[k]}개)`);
-      const order = d.lv2.order;
-      if (order.length < 4 || order.length > 7) errs.push('2-B: 흐름 카드는 4~7개');
-      if (order.some((c) => !Array.isArray(c) || !c[0] || !c[1])) errs.push('2-B: 카드마다 [쉬운 말, 역할]');
+      const easyNo = (d.lv2.easy || []).map(([, k]) => k).sort((a, b) => a - b);
+      if (easyNo.length !== n || easyNo.some((k, i) => k !== i + 1)) errs.push(`2-B: 쉬운 말(lv2.easy)이 문장 ${n}개마다 하나씩`);
       const keys = d.lv3?.keys;
       if (!keys?.lines?.length || keys.lines.length < 4 || keys.lines.length > 6) errs.push('3-A: 핵심어 문장은 4~6개');
       (keys?.lines || []).forEach(([t, a], i) => { if (!/_{3,}/.test(t || '') || !a) errs.push(`3-A ${i + 1}: 빈칸(____)과 답이 있어야 함`); });
       if (!keys?.extra?.length || keys.extra.length > 3) errs.push('3-A: 보기에 섞을 헷갈리는 낱말 1~3개');
       if (((d.lv3?.frame?.text || '').match(/\(\s*\)/g) || []).length < 2) errs.push('3-B: 틀 문장에 ( ) 칸이 2개 이상');
-      (d.lv3?.conn || []).forEach((c, i) => {
-        if (!(Number.isInteger(c.s) && c.s >= 2 && c.s <= n)) return errs.push(`3-C ${i + 1}: 문장 번호는 2~${n}`);
-        if (!CONNECTORS.includes(c.answer) || !new RegExp(`^${c.answer}\\b`).test(S[c.s - 1])) errs.push(`3-C ${i + 1}: ${c.s}번 문장이 연결어 "${c.answer}"로 시작해야 함`);
-        if (!CONN_ROLES.includes(c.role)) errs.push(`3-C ${i + 1}: 하는 일은 ${CONN_ROLES.join('·')} 중 하나`);
-      });
-      if ((d.lv3?.conn || []).length > 3) errs.push('3-C: 연결어는 3개까지');
     } else {
       (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
       if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
@@ -276,13 +265,13 @@ function flowPage(d) {
     for (const m of list) {
       out += esc(sent.slice(pos, m.at[0]));
       const t = esc(sent.slice(m.at[0], m.at[1]));
-      out += m.kind === 'ref' ? `<span class="fm-ref">${m.no}</span>${t}` : m.kind === 'conn' ? `<span class="fm-conn">( 3-C ${m.no} )</span>` : `<span class="fm-${m.kind}">${t}</span>`;
+      out += m.kind === 'ref' ? `<span class="fm-ref">${m.no}</span>${t}` : `<span class="fm-${m.kind}">${t}</span>`;
       pos = m.at[1];
     }
     return out + esc(sent.slice(pos));
   };
   const legend = Object.keys(spans).length
-    ? `<em class="fm-legend"><u class="fm-blank">빈칸</u> <u class="fm-grammar">어법</u> <u class="fm-write">서술형</u> 나올 곳${newBasic(d) ? ' · ㉠ 지칭(2-A)' : ''}${(d.lv3?.conn || []).length ? ' · ( 3-C ) 연결어 빈칸' : ''}</em>`
+    ? `<em class="fm-legend"><u class="fm-blank">빈칸</u> <u class="fm-grammar">어법</u> <u class="fm-write">서술형</u> 나올 곳${newBasic(d) ? ' · ㉠ 지칭(2-A)' : ''}</em>`
     : '';
   return `
 <div class="stage first"><span>STAGE 2</span>흐름 지도${legend}<em class="pname">${T}</em></div>
@@ -295,14 +284,12 @@ function flowPage(d) {
 function newBasicPlan(d) {
   const rnd = seeded(`${d.title}|basic|${d.sentences.join(' ')}`);
   const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (a.length > 1 && a.every((x, i) => x === arr[i])) a.push(a.shift()); return a; };
-  const GA = '가나다라마바사';
-  const cards = shuffle(d.lv2.order.map(([t, role], i) => ({ t, role, i })));
+  const GA = '가나다라마바사아자차카타파하';
+  const inOrder = [...d.lv2.easy].sort((a, b) => a[1] - b[1]);
+  const cards = shuffle(inOrder.map(([t], i) => ({ t, i })));
   cards.forEach((c, k) => { c.label = GA[k]; });
-  const roles = shuffle([...new Set(d.lv2.order.map(([, r]) => r))]);
   const words = shuffle([...d.lv3.keys.lines.map(([, a]) => a), ...d.lv3.keys.extra]);
-  const conn = d.lv3.conn || [];
-  const connBox = conn.length ? shuffle([...conn.map((c) => c.answer), ...shuffle(CONNECTORS.filter((c) => !conn.some((x) => x.answer === c))).slice(0, 5 - conn.length)]) : [];
-  return { cards, roles, words, connBox, order: d.lv2.order.map((_, i) => cards.find((c) => c.i === i).label) };
+  return { cards, words, order: inOrder.map((_, i) => cards.find((c) => c.i === i).label) };
 }
 const CHIP = (x) => `<span class="chip">${esc(x)}</span>`;
 function newLv23(d) {
@@ -313,10 +300,9 @@ function newLv23(d) {
 ${LV(2, '정확히 이해하기')}
 ${Q('2-A', '지칭', '흐름 지도의 ㉠㉡…이 가리키는 것을 우리말로')}
 ${LIST(lv2.refs.map((r, i) => `${REF_MARK[i]} ${esc(r.target)}`), { fill: '58%', nw: true })}
-${Q('2-B', '흐름 배열', '① 순서대로 배열 ② 카드마다 역할 고르기')}
-<div class="w-box">${P.cards.map((c) => `<div>(${c.label}) ${esc(c.t)}<span class="rl">역할 (　　　　)</span></div>`).join('')}</div>
-<div class="w-box chips"><b>역할 보기</b>${P.roles.map(CHIP).join('')}</div>
-<div class="w-sub">① 순서　${P.cards.map(() => '(　 )').join(' → ')}</div>
+${Q('2-B', '순서 배열', '모든 문장을 쉬운 말로 섞어 놓았어요. 글의 순서대로')}
+<div class="w-box">${P.cards.map((c) => `<div>(${c.label}) ${esc(c.t)}</div>`).join('')}</div>
+<div class="w-sub">${P.cards.map(() => '(　 )').join(' → ')}</div>
 
 ${LV(3, '흐름 잡기')}
 ${Q('3-A', '핵심어', '보기에서 골라 쓰기 (2개는 남음)')}
@@ -324,9 +310,6 @@ ${Q('3-A', '핵심어', '보기에서 골라 쓰기 (2개는 남음)')}
 ${LIST(lv3.keys.lines.map(([t]) => esc(t)), { cls: 'en' })}
 ${Q('3-B', '내 말로 한 줄', '빈칸만 채우면 요지 완성')}
 <div class="w-frame">${esc(lv3.frame.text).replace(/\(\s*\)/g, slot)}</div>
-${(lv3.conn || []).length ? `${Q('3-C', '연결어', '흐름 지도 ( 3-C ① ) 자리에 알맞은 말과 하는 일')}
-<div class="w-box chips">${P.connBox.map(CHIP).join('')}<br><b>하는 일</b>${CONN_ROLES.map(CHIP).join('')}</div>
-<div class="w-sub">${lv3.conn.map((c, i) => `${CIRCLE[i]} (${c.s}번 앞) 　　　　　　　 하는 일 (　　　)`).join('<br>')}</div>` : ''}
 `;
 }
 
@@ -413,10 +396,10 @@ function answerPage(d, has) {
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
 ${A('2-A', lv2.refs.map((r, i) => `<span>${REF_MARK[i]} ${esc(r.target)} → <b>${esc(r.answer)}</b></span>`).join(''))}
-${A('2-B', `<span><b>${P.order.map((l) => `(${l})`).join(' → ')}</b></span>${P.cards.map((c) => `<span>(${c.label}) ${esc(c.role)}</span>`).join('')}`)}
+${A('흐름', `<span>□ ${(d.fmarks || []).filter((m) => m.kind === 'blank').map((m) => `<b>${esc(m.target)}</b> ${esc(m.why || '')}`).join(' · ')}</span>`)}
+${A('2-B', `<span><b>${P.order.map((l) => `(${l})`).join(' → ')}</b></span>`)}
 ${A('3-A', AL(lv3.keys.lines.map(([, a]) => `<b>${esc(a)}</b>`)))}
-${A('3-B', `<span>예: ${esc(lv3.frame.example || '')}</span>`)}
-${(lv3.conn || []).length ? A('3-C', AL(lv3.conn.map((c) => `<b>${esc(c.answer)}</b> ${esc(c.role)} (${c.s}번)`))) : ''}`;
+${A('3-B', `<span>예: ${esc(lv3.frame.example || '')}</span>`)}`;
   const basic = () => (P ? basicNew() : `
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
@@ -595,16 +578,11 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .stage .fm-legend{margin-left:14px;font-style:normal;font-size:7pt;font-weight:400;color:#3a3a3a;letter-spacing:0px}
 .fm-legend u{text-decoration-line:none;margin-right:4px}
 .fm-legend u.fm-grammar,.fm-legend u.fm-write{text-decoration-line:underline}
-.fm-conn{font-family:"Noto Sans KR", sans-serif;font-size:7.4pt;font-weight:700;white-space:nowrap}
 .w-box.chips{text-align:center;line-height:1.55;padding:3px 6px;font-size:7.3pt}
 .w-box.chips .chip{display:inline-block;white-space:nowrap;margin:0px 6px}
 .w-box.chips b{margin-right:4px;font-size:6.8pt}
-.w-box .rl{float:right;color:#4d4d4d;font-size:7pt}
 .w-frame{border:0.6px solid #9a9a9a;padding:6px 9px;margin:3px 0px 5px;line-height:2.1;break-inside:avoid}
 .w-frame .slot{display:inline-block;min-width:78px;border-bottom:0.8px solid #444444;margin:0px 3px;height:12px;vertical-align:-2px}
-.w-conn{display:flex;gap:6px;align-items:baseline;margin:3px 0px;break-inside:avoid}
-.w-conn .en{flex:1 1 auto;font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.5}
-.w-conn .m{flex:0 0 auto;font-size:6.8pt;color:#4d4d4d;white-space:nowrap}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
