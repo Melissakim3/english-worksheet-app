@@ -36,12 +36,13 @@ export const BASE_PARTS = ['study', 'flow', 'basic', 'exam', 'wrap'];
 
 // 2쪽 새 모양 (2026-10-19 선생님): 흐름 지도에 표시(□ 빈칸 · 점선 어법 · 밑줄 서술형 · ㉠ 지칭),
 //   2-B 순서 배열(모든 문장의 쉬운 말을 섞어서 · 역할은 뺌) · 3-A 핵심어(보기 상자) · 3-B 내 말로 한 줄(틀 문장). 연결어 문제는 뺌
-//   □ 빈칸 기준: 주제·요지에 바로 이어지고, 다른 문장에 근거(why: 'N번 …')가 있는 말만 — 근거를 못 대면 네모 X
+//   □ 빈칸 기준(선생님): type 요지(주제·요지 속 말) · 원인·결과(왜→그래서 부분) · 근거(같은 뜻이 다른 문장에 — why에 'N번'), 이유 없으면 네모 X
 //   lv3.keys가 있으면 새 모양, 없으면 예전 모양 그대로
 export const newBasic = (d) => !!d?.lv3?.keys;
 const REF_MARK = '㉠㉡㉢㉣㉤㉥㉦';
 const FMARK_RANGE = { blank: [2, 4], grammar: [3, 6], write: [1, 2] };
 const FMARK_NAME = { blank: '빈칸', grammar: '어법', write: '서술형' };
+export const BLANK_TYPES = ['요지', '원인·결과', '근거'];
 // 흐름 지도에 표시할 자리 (지칭 + 표시) — 문장마다 [시작, 끝, 종류]
 function flowSpans(d) {
   const out = {};
@@ -109,13 +110,16 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
         count[m.kind]++;
         place(m.s, m.target, `흐름 지도 ${FMARK_NAME[m.kind]} 표시`);
         if (m.kind === 'blank') {
+          if (!BLANK_TYPES.includes(m.type)) errs.push(`흐름 지도 빈칸 "${m.target}": type은 ${BLANK_TYPES.join(' · ')} 중 하나`);
+          if (!m.why) errs.push(`흐름 지도 빈칸 "${m.target}": why(이유) 없음`);
           const k = Number((String(m.why || '').match(/(\d+)\s*번/) || [])[1]);
-          if (!k || k === m.s || k > n) errs.push(`흐름 지도 빈칸 "${m.target}": why에 다른 문장 근거('N번 …')가 있어야 함`);
+          if (m.type === '근거' && (!k || k === m.s || k > n)) errs.push(`흐름 지도 빈칸 "${m.target}": 근거는 why에 다른 문장 번호('N번 …')가 있어야 함`);
         }
       });
       for (const [k, [lo, hi]] of Object.entries(FMARK_RANGE)) if (count[k] < lo || count[k] > hi) errs.push(`흐름 지도: ${FMARK_NAME[k]} 표시는 ${lo}~${hi}개 (지금 ${count[k]}개)`);
       const easyNo = (d.lv2.easy || []).map(([, k]) => k).sort((a, b) => a - b);
       if (easyNo.length !== n || easyNo.some((k, i) => k !== i + 1)) errs.push(`2-B: 쉬운 말(lv2.easy)이 문장 ${n}개마다 하나씩`);
+      if (!(d.fmarks || []).some((m) => m.kind === 'blank' && m.type === '요지')) errs.push('흐름 지도: 요지 빈칸(□)이 하나는 있어야 함');
       const keys = d.lv3?.keys;
       if (!keys?.lines?.length || keys.lines.length < 4 || keys.lines.length > 6) errs.push('3-A: 핵심어 문장은 4~6개');
       (keys?.lines || []).forEach(([t, a], i) => { if (!/_{3,}/.test(t || '') || !a) errs.push(`3-A ${i + 1}: 빈칸(____)과 답이 있어야 함`); });
@@ -284,12 +288,10 @@ function flowPage(d) {
 function newBasicPlan(d) {
   const rnd = seeded(`${d.title}|basic|${d.sentences.join(' ')}`);
   const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (a.length > 1 && a.every((x, i) => x === arr[i])) a.push(a.shift()); return a; };
-  const GA = '가나다라마바사아자차카타파하';
   const inOrder = [...d.lv2.easy].sort((a, b) => a[1] - b[1]);
   const cards = shuffle(inOrder.map(([t], i) => ({ t, i })));
-  cards.forEach((c, k) => { c.label = GA[k]; });
   const words = shuffle([...d.lv3.keys.lines.map(([, a]) => a), ...d.lv3.keys.extra]);
-  return { cards, words, order: inOrder.map((_, i) => cards.find((c) => c.i === i).label) };
+  return { cards, words };
 }
 const CHIP = (x) => `<span class="chip">${esc(x)}</span>`;
 function newLv23(d) {
@@ -300,9 +302,8 @@ function newLv23(d) {
 ${LV(2, '정확히 이해하기')}
 ${Q('2-A', '지칭', '흐름 지도의 ㉠㉡…이 가리키는 것을 우리말로')}
 ${LIST(lv2.refs.map((r, i) => `${REF_MARK[i]} ${esc(r.target)}`), { fill: '58%', nw: true })}
-${Q('2-B', '순서 배열', '모든 문장을 쉬운 말로 섞어 놓았어요. 글의 순서대로')}
-<div class="w-box">${P.cards.map((c) => `<div>(${c.label}) ${esc(c.t)}</div>`).join('')}</div>
-<div class="w-sub">${P.cards.map(() => '(　 )').join(' → ')}</div>
+${Q('2-B', '순서 배열', '모든 문장을 쉬운 말로 섞어 놓았어요. 몇 번째인지 숫자로')}
+<div class="w-box ord">${P.cards.map((c) => `<div><span>${esc(c.t)}</span><b>(　　)</b></div>`).join('')}</div>
 
 ${LV(3, '흐름 잡기')}
 ${Q('3-A', '핵심어', '보기에서 골라 쓰기 (2개는 남음)')}
@@ -396,8 +397,8 @@ function answerPage(d, has) {
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
 ${A('2-A', lv2.refs.map((r, i) => `<span>${REF_MARK[i]} ${esc(r.target)} → <b>${esc(r.answer)}</b></span>`).join(''))}
-${A('흐름', `<span>□ ${(d.fmarks || []).filter((m) => m.kind === 'blank').map((m) => `<b>${esc(m.target)}</b> ${esc(m.why || '')}`).join(' · ')}</span>`)}
-${A('2-B', `<span><b>${P.order.map((l) => `(${l})`).join(' → ')}</b></span>`)}
+${A('흐름', (d.fmarks || []).filter((m) => m.kind === 'blank').map((m) => `<span>□ <b>${esc(m.target)}</b> [${esc(m.type)}] ${esc(m.why || '')}</span>`).join(''))}
+${A('2-B', `<span>위에서부터 <b>${P.cards.map((c) => c.i + 1).join(' · ')}</b></span>`)}
 ${A('3-A', AL(lv3.keys.lines.map(([, a]) => `<b>${esc(a)}</b>`)))}
 ${A('3-B', `<span>예: ${esc(lv3.frame.example || '')}</span>`)}`;
   const basic = () => (P ? basicNew() : `
@@ -578,6 +579,8 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .stage .fm-legend{margin-left:14px;font-style:normal;font-size:7pt;font-weight:400;color:#3a3a3a;letter-spacing:0px}
 .fm-legend u{text-decoration-line:none;margin-right:4px}
 .fm-legend u.fm-grammar,.fm-legend u.fm-write{text-decoration-line:underline}
+.w-box.ord div{display:flex;justify-content:space-between;gap:8px}
+.w-box.ord b{font-weight:400;color:#3a3a3a;white-space:nowrap}
 .w-box.chips{text-align:center;line-height:1.55;padding:3px 6px;font-size:7.3pt}
 .w-box.chips .chip{display:inline-block;white-space:nowrap;margin:0px 6px}
 .w-box.chips b{margin-right:4px;font-size:6.8pt}
