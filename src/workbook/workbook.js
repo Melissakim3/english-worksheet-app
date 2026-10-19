@@ -513,7 +513,7 @@ export function workbooksHtml(list, { fontCss = '', parts, title = '' } = {}) {
 }
 
 export const WORKBOOK_CSS = `
-@page { size: a4; margin: 6mm 9mm 9mm; }
+@page { size: a4; margin: 6mm 9mm 9mm; @bottom-center { content: "씨플러스엠 어학원"; font-family: "Noto Sans KR", sans-serif; font-size: 6.5pt; color: #8a8a8a; vertical-align: middle; } }
 body{font-family:"Noto Sans KR", sans-serif;font-size:8.1pt;color:#111111;line-height:1.32}
 table{width:100%;border-collapse:collapse;margin:2px 0px}
 .cols{column-count:2;column-gap:7mm;column-rule:1px solid #dddddd}
