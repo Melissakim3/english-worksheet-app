@@ -573,7 +573,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
 .fm-blank{border:0.9px solid #222222;padding:0px 2px;border-radius:1px}
-.fm-grammar{text-decoration:underline dotted #222222;text-decoration-thickness:1.2px;text-underline-offset:2.5px}
+.fm-grammar{text-decoration:underline wavy #000000;text-decoration-thickness:1.8px;text-underline-offset:2px;text-decoration-skip-ink:none}
 .fm-write{text-decoration:underline solid #222222;text-decoration-thickness:0.9px;text-underline-offset:2.5px}
 .fm-ref{font-family:"Noto Sans KR", sans-serif;font-size:7pt;margin-right:1px;vertical-align:1px}
 .stage .fm-legend{margin-left:14px;font-style:normal;font-size:7pt;font-weight:400;color:#3a3a3a;letter-spacing:0px}
@@ -589,7 +589,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
-.fmap .ft{font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.45;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
+.fmap .ft{font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.7;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
 .fmap .ft:nth-last-child(1){border-bottom:none}
 .fmap .fl{border-left:2.5px solid;padding:2px 0px 2px 6px;display:flex;flex-direction:column;justify-content:center;line-height:1.25;border-bottom:0.5px solid #e6e6e6}
 .fmap .fl:nth-last-child(2){border-bottom:none}
