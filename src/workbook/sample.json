@@ -20,23 +20,44 @@
           "en": "intrinsic",
           "ko": "본질적인",
           "syn": [
-            ["essential", "필수적인"],
-            ["inherent", "내재된"]
+            [
+              "essential",
+              "필수적인"
+            ],
+            [
+              "inherent",
+              "내재된"
+            ]
           ],
           "ant": [
-            ["extrinsic", "외적인"],
-            ["external", "외부의"]
+            [
+              "extrinsic",
+              "외적인"
+            ],
+            [
+              "external",
+              "외부의"
+            ]
           ]
         },
         {
           "en": "novelty",
           "ko": "새로움",
           "syn": [
-            ["newness", "새로움"],
-            ["originality", "독창성"]
+            [
+              "newness",
+              "새로움"
+            ],
+            [
+              "originality",
+              "독창성"
+            ]
           ],
           "ant": [
-            ["familiarity", "익숙함"]
+            [
+              "familiarity",
+              "익숙함"
+            ]
           ]
         }
       ]
@@ -51,12 +72,24 @@
           "en": "ingrained",
           "ko": "깊이 배어든",
           "syn": [
-            ["deeply rooted", "깊이 뿌리박힌"],
-            ["embedded", "박혀 있는"]
+            [
+              "deeply rooted",
+              "깊이 뿌리박힌"
+            ],
+            [
+              "embedded",
+              "박혀 있는"
+            ]
           ],
           "ant": [
-            ["superficial", "피상적인"],
-            ["temporary", "일시적인"]
+            [
+              "superficial",
+              "피상적인"
+            ],
+            [
+              "temporary",
+              "일시적인"
+            ]
           ]
         }
       ]
@@ -71,12 +104,24 @@
           "en": "slow",
           "ko": "느린",
           "syn": [
-            ["gradual", "점진적인"],
-            ["sluggish", "굼뜬"]
+            [
+              "gradual",
+              "점진적인"
+            ],
+            [
+              "sluggish",
+              "굼뜬"
+            ]
           ],
           "ant": [
-            ["rapid", "빠른"],
-            ["swift", "신속한"]
+            [
+              "rapid",
+              "빠른"
+            ],
+            [
+              "swift",
+              "신속한"
+            ]
           ]
         }
       ]
@@ -91,12 +136,24 @@
           "en": "improvement",
           "ko": "개선",
           "syn": [
-            ["progress", "진보"],
-            ["advancement", "발전"]
+            [
+              "progress",
+              "진보"
+            ],
+            [
+              "advancement",
+              "발전"
+            ]
           ],
           "ant": [
-            ["deterioration", "악화"],
-            ["decline", "쇠퇴"]
+            [
+              "deterioration",
+              "악화"
+            ],
+            [
+              "decline",
+              "쇠퇴"
+            ]
           ]
         }
       ]
@@ -111,12 +168,24 @@
           "en": "perceptible",
           "ko": "감지할 수 있는",
           "syn": [
-            ["noticeable", "눈에 띄는"],
-            ["observable", "관찰 가능한"]
+            [
+              "noticeable",
+              "눈에 띄는"
+            ],
+            [
+              "observable",
+              "관찰 가능한"
+            ]
           ],
           "ant": [
-            ["imperceptible", "감지할 수 없는"],
-            ["invisible", "보이지 않는"]
+            [
+              "imperceptible",
+              "감지할 수 없는"
+            ],
+            [
+              "invisible",
+              "보이지 않는"
+            ]
           ]
         }
       ]
@@ -131,12 +200,24 @@
           "en": "advent",
           "ko": "출현, 도래",
           "syn": [
-            ["arrival", "도착, 도래"],
-            ["emergence", "출현"]
+            [
+              "arrival",
+              "도착, 도래"
+            ],
+            [
+              "emergence",
+              "출현"
+            ]
           ],
           "ant": [
-            ["departure", "떠남"],
-            ["disappearance", "사라짐"]
+            [
+              "departure",
+              "떠남"
+            ],
+            [
+              "disappearance",
+              "사라짐"
+            ]
           ]
         }
       ]
@@ -151,24 +232,48 @@
           "en": "profound",
           "ko": "깊은, 심오한",
           "syn": [
-            ["deep", "깊은"],
-            ["significant", "중대한"]
+            [
+              "deep",
+              "깊은"
+            ],
+            [
+              "significant",
+              "중대한"
+            ]
           ],
           "ant": [
-            ["superficial", "피상적인"],
-            ["trivial", "사소한"]
+            [
+              "superficial",
+              "피상적인"
+            ],
+            [
+              "trivial",
+              "사소한"
+            ]
           ]
         },
         {
           "en": "assimilate",
           "ko": "받아들이다",
           "syn": [
-            ["absorb", "흡수하다"],
-            ["adapt to", "~에 적응하다"]
+            [
+              "absorb",
+              "흡수하다"
+            ],
+            [
+              "adapt to",
+              "~에 적응하다"
+            ]
           ],
           "ant": [
-            ["reject", "거부하다"],
-            ["resist", "저항하다"]
+            [
+              "reject",
+              "거부하다"
+            ],
+            [
+              "resist",
+              "저항하다"
+            ]
           ]
         }
       ]
@@ -177,23 +282,35 @@
   "flow": [
     {
       "label": "주장",
-      "s": [1]
+      "s": [
+        1
+      ]
     },
     {
       "label": "과거 상황",
-      "s": [2, 3, 4]
+      "s": [
+        2,
+        3,
+        4
+      ]
     },
     {
       "label": "전환점",
-      "s": [5]
+      "s": [
+        5
+      ]
     },
     {
       "label": "긍정적 결과",
-      "s": [6]
+      "s": [
+        6
+      ]
     },
     {
       "label": "부정적 결과",
-      "s": [7]
+      "s": [
+        7
+      ]
     }
   ],
   "core": {
@@ -203,68 +320,162 @@
   },
   "lv1": {
     "words": [
-      ["intrinsic", "본질적인"],
-      ["novelty", "새로움"],
-      ["ingrained", "깊이 배어든"],
-      ["state of affairs", "상황, 사태"],
-      ["the rule", "일반적인 일, 보통"],
-      ["much less", "하물며 ~도 아닌"],
-      ["perceptible", "감지할 수 있는"],
-      ["advent", "출현, 도래"],
-      ["profound", "깊은, 심각한"],
-      ["assimilate", "받아들이다, 동화하다"]
+      [
+        "intrinsic",
+        "본질적인"
+      ],
+      [
+        "novelty",
+        "새로움"
+      ],
+      [
+        "ingrained",
+        "깊이 배어든"
+      ],
+      [
+        "state of affairs",
+        "상황, 사태"
+      ],
+      [
+        "the rule",
+        "일반적인 일, 보통"
+      ],
+      [
+        "much less",
+        "하물며 ~도 아닌"
+      ],
+      [
+        "perceptible",
+        "감지할 수 있는"
+      ],
+      [
+        "advent",
+        "출현, 도래"
+      ],
+      [
+        "profound",
+        "깊은, 심각한"
+      ],
+      [
+        "assimilate",
+        "받아들이다, 동화하다"
+      ]
     ],
     "ox": [
-      ["고대에도 변화는 늘 있는 일이었다.", "X", 2],
-      ["수백 년 전 사람들은 미래가 과거와 비슷할 것이라고 생각했다.", "O", 3],
-      ["미래가 삶을 나아지게 할 거라는 생각은 예전부터 인기가 많았다.", "X", 4],
-      ["변화가 잦아지자 사람들은 변화를 알아차리고 기대하게 되었다.", "O", 5],
-      ["오늘날 많은 사람들은 변화가 너무 느린 것을 걱정한다.", "X", 7]
+      [
+        "고대에도 변화는 늘 있는 일이었다.",
+        "X",
+        2
+      ],
+      [
+        "수백 년 전 사람들은 미래가 과거와 비슷할 것이라고 생각했다.",
+        "O",
+        3
+      ],
+      [
+        "미래가 삶을 나아지게 할 거라는 생각은 예전부터 인기가 많았다.",
+        "X",
+        4
+      ],
+      [
+        "변화가 잦아지자 사람들은 변화를 알아차리고 기대하게 되었다.",
+        "O",
+        5
+      ],
+      [
+        "오늘날 많은 사람들은 변화가 너무 느린 것을 걱정한다.",
+        "X",
+        7
+      ]
     ]
   },
   "lv2": {
     "refs": [
-      ["2번 this state of affairs", "기술·사회·경제가 끊임없이 변하는 지금의 상황"],
-      ["5번 All that", "변화가 느려서 미래가 나아질 거라 기대하지 않던 옛날 상황 (3·4번)"],
-      ["5번 they", "changes (변화들)"],
-      ["6번 that", "new things (새로운 것들)"],
-      ["7번 them", "the changes (그 변화들)"]
+      {
+        "s": 2,
+        "target": "this state of affairs",
+        "answer": "기술·사회·경제가 끊임없이 변하는 지금의 상황"
+      },
+      {
+        "s": 5,
+        "target": "All that",
+        "answer": "변화가 느려서 미래가 나아질 거라 기대하지 않던 옛날 상황 (3·4번)"
+      },
+      {
+        "s": 5,
+        "target": "they",
+        "answer": "changes (변화들)"
+      },
+      {
+        "s": 6,
+        "target": "that",
+        "answer": "new things (새로운 것들)"
+      }
     ],
     "easy": [
-      ["요즘은 ‘변화가 너무 빨라 못 따라가면 어쩌지?’ 걱정한다.", 7],
-      ["변화가 너무 익숙해서 옛날 모습이 잘 상상이 안 된다.", 2],
-      ["‘미래는 더 좋아질 거야’는 흔하지도, 인기 있지도 않았다.", 4],
-      ["기술과 함께 ‘새것이 계속 나오는 게 당연하다’는 생각이 생겼다.", 1],
-      ["지금은 ‘미래엔 생활을 편하게 할 물건이 나오겠지’ 기대한다.", 6],
-      ["옛날엔 세상이 느리게 변해 ‘내일도 어제 같겠지’ 생각했다.", 3],
-      ["변화가 잦아지자 사람들이 변화를 느끼고 기다리게 되었다.", 5]
+      [
+        "요즘은 ‘변화가 너무 빨라 못 따라가면 어쩌지?’ 걱정한다.",
+        7
+      ],
+      [
+        "변화가 너무 익숙해서 옛날 모습이 잘 상상이 안 된다.",
+        2
+      ],
+      [
+        "‘미래는 더 좋아질 거야’는 흔하지도, 인기 있지도 않았다.",
+        4
+      ],
+      [
+        "기술과 함께 ‘새것이 계속 나오는 게 당연하다’는 생각이 생겼다.",
+        1
+      ],
+      [
+        "지금은 ‘미래엔 생활을 편하게 할 물건이 나오겠지’ 기대한다.",
+        6
+      ],
+      [
+        "옛날엔 세상이 느리게 변해 ‘내일도 어제 같겠지’ 생각했다.",
+        3
+      ],
+      [
+        "변화가 잦아지자 사람들이 변화를 느끼고 기다리게 되었다.",
+        5
+      ]
     ]
   },
   "lv3": {
-    "cards": [
-      ["가", "과거: 변화가 느려서 미래도 과거와 같을 거라 생각함"],
-      ["나", "주장: 기술과 함께 혁신이 문명의 본질이 됨"],
-      ["다", "문제: 변화가 너무 빠르고 깊어서 따라가기 어려움"],
-      ["라", "현재: 미래가 삶을 좋게 바꿀 거라 기대함"],
-      ["마", "전환점: 변화가 잦아져 느껴지고 기대되기 시작함"]
-    ],
-    "order": ["나", "가", "마", "라", "다"],
-    "steps": [
-      ["주장 (1번)", "innovation이 문명의 i________ 요소가 됨", "intrinsic"],
-      ["과거 (3·4번)", "change was so s___ that the future = the past", "slow"],
-      ["전환점 (5번)", "changes became p__________ and expected", "perceptible"],
-      ["현재 (6번)", "people expect the future to bring i__________", "improvements"],
-      ["문제 (7번)", "changes may be too fast for people to a_________ them", "assimilate"]
-    ],
-    "ownWords": "기술과 함께 혁신이 당연해짐 / 옛날엔 변화가 느려 미래도 같다고 봄 / 변화가 잦아져 기대하게 됨 / 미래가 삶을 좋게 할 거라 믿음 / 하지만 너무 빠른 변화가 걱정임",
-    "roleChoices": "A 주장　B 배경(과거)　C 전환점　D 결과(현재)　E 반전·문제",
-    "roles": ["A", "B", "B", "B", "C", "D", "E"],
-    "conn": [
-      ["The concept … was never common, ________ popular.", "much less", "4번 · 앞보다 더 강하게 부정"],
-      ["________, many of us now fear that the changes …", "However", "7번 · 앞(기대)과 반대(걱정)"],
-      ["________ the advent of technology, people expect …", "Since", "6번 · ~이후로"],
-      ["change was ____ slow ____ most people expected …", "so … that", "3번 · 원인 → 결과"]
-    ]
+    "keys": {
+      "lines": [
+        [
+          "Innovation became a key part of ________.",
+          "civilization"
+        ],
+        [
+          "Long ago, change was very ________.",
+          "slow"
+        ],
+        [
+          "Changes began to occur so ________ that people expected them.",
+          "often"
+        ],
+        [
+          "People expect the future to ________ their daily lives.",
+          "improve"
+        ],
+        [
+          "Now many of us ________ that changes come too fast.",
+          "fear"
+        ]
+      ],
+      "extra": [
+        "rapid",
+        "hope"
+      ]
+    },
+    "frame": {
+      "text": "이 글은 ( )에 대한 생각이 ( )에서 ( )으로 바뀌었다고 말한다.",
+      "example": "기술 변화 / 기대 / 두려움"
+    }
   },
   "lv4": {
     "title": {
@@ -280,7 +491,13 @@
     },
     "blank": {
       "sentence": "All that changed when changes began to occur so often that they were not only perceptible but ________.",
-      "options": ["expected", "ignored", "forgotten", "resisted", "prevented"],
+      "options": [
+        "expected",
+        "ignored",
+        "forgotten",
+        "resisted",
+        "prevented"
+      ],
       "answer": 1,
       "why": "6번 ‘people expect the future to bring new things’"
     },
@@ -292,29 +509,127 @@
   "lv5": {
     "summary": {
       "sentence": "Technology led people to (A) ________ constant improvement, but the (B) ________ of change now makes many worry that they cannot keep up.",
-      "options": ["expect — speed", "fear — slowness", "ignore — speed", "expect — slowness", "resist — depth"],
+      "options": [
+        "expect — speed",
+        "fear — slowness",
+        "ignore — speed",
+        "expect — slowness",
+        "resist — depth"
+      ],
       "answer": 1,
       "why": "6번 기대 / 7번 too fast"
     },
     "grammar": [
-      {"s": 1, "target": "came", "wrong": "coming", "point": "부사구 도치", "why": "With technology가 앞에 나와 주어 the idea가 뒤로 → 동사 자리"},
-      {"s": 1, "target": "that", "wrong": "which", "point": "동격 that", "why": "the idea의 내용을 말하는 동격절, 뒤가 완전한 문장"},
-      {"s": 2, "target": "are", "wrong": "is", "point": "수 일치", "why": "주어는 Constant changes(복수), in ~ economics는 꾸미는 말"},
-      {"s": 2, "target": "wasn’t", "wrong": "weren’t", "point": "수 일치", "why": "주어 this state of affairs는 단수"},
-      {"s": 3, "target": "slow", "wrong": "slowly", "point": "보어 형용사", "why": "be동사 was의 보어 → 형용사"},
-      {"s": 3, "target": "to be", "wrong": "being", "point": "expect + O + to V", "why": "expect는 목적격 보어로 to부정사"},
-      {"s": 4, "target": "much less", "wrong": "much more", "point": "much less", "why": "앞이 부정(never) → much less(~는 말할 것도 없이)"},
-      {"s": 5, "target": "changed", "wrong": "was changed", "point": "자동사 수동태 X", "why": "change(바뀌다)는 여기서 목적어 없는 자동사"},
-      {"s": 5, "target": "perceptible", "wrong": "perceptibly", "point": "not only A but B 병렬", "why": "were의 보어, but 뒤 expected와 나란히 형용사"},
-      {"s": 6, "target": "Since", "wrong": "While", "point": "전치사·접속사", "why": "뒤가 명사구(the advent of technology) → 전치사 Since"},
-      {"s": 6, "target": "to bring", "wrong": "bringing", "point": "expect + O + to V", "why": "expect + 목적어 + to부정사"},
-      {"s": 7, "target": "to assimilate", "wrong": "assimilating", "point": "too ~ to V", "why": "too ~ for 의미상 주어 to V (너무 ~해서 …가 ~할 수 없다)"}
+      {
+        "s": 1,
+        "target": "came",
+        "wrong": "coming",
+        "point": "부사구 도치",
+        "why": "With technology가 앞에 나와 주어 the idea가 뒤로 → 동사 자리"
+      },
+      {
+        "s": 1,
+        "target": "that",
+        "wrong": "which",
+        "point": "동격 that",
+        "why": "the idea의 내용을 말하는 동격절, 뒤가 완전한 문장"
+      },
+      {
+        "s": 2,
+        "target": "are",
+        "wrong": "is",
+        "point": "수 일치",
+        "why": "주어는 Constant changes(복수), in ~ economics는 꾸미는 말"
+      },
+      {
+        "s": 2,
+        "target": "wasn’t",
+        "wrong": "weren’t",
+        "point": "수 일치",
+        "why": "주어 this state of affairs는 단수"
+      },
+      {
+        "s": 3,
+        "target": "slow",
+        "wrong": "slowly",
+        "point": "보어 형용사",
+        "why": "be동사 was의 보어 → 형용사"
+      },
+      {
+        "s": 3,
+        "target": "to be",
+        "wrong": "being",
+        "point": "expect + O + to V",
+        "why": "expect는 목적격 보어로 to부정사"
+      },
+      {
+        "s": 4,
+        "target": "much less",
+        "wrong": "much more",
+        "point": "much less",
+        "why": "앞이 부정(never) → much less(~는 말할 것도 없이)"
+      },
+      {
+        "s": 5,
+        "target": "changed",
+        "wrong": "was changed",
+        "point": "자동사 수동태 X",
+        "why": "change(바뀌다)는 여기서 목적어 없는 자동사"
+      },
+      {
+        "s": 5,
+        "target": "perceptible",
+        "wrong": "perceptibly",
+        "point": "not only A but B 병렬",
+        "why": "were의 보어, but 뒤 expected와 나란히 형용사"
+      },
+      {
+        "s": 6,
+        "target": "Since",
+        "wrong": "While",
+        "point": "전치사·접속사",
+        "why": "뒤가 명사구(the advent of technology) → 전치사 Since"
+      },
+      {
+        "s": 6,
+        "target": "to bring",
+        "wrong": "bringing",
+        "point": "expect + O + to V",
+        "why": "expect + 목적어 + to부정사"
+      },
+      {
+        "s": 7,
+        "target": "to assimilate",
+        "wrong": "assimilating",
+        "point": "too ~ to V",
+        "why": "too ~ for 의미상 주어 to V (너무 ~해서 …가 ~할 수 없다)"
+      }
     ],
     "vocab": [
-      {"s": 2, "target": "ingrained", "wrong": "ignored", "why": "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"},
-      {"s": 4, "target": "common", "wrong": "rare", "why": "옛날엔 미래가 나아진다는 생각이 흔하지 않았음 (never common, much less popular)"},
-      {"s": 6, "target": "advent", "wrong": "adventure", "why": "기술의 '출현' 이후"},
-      {"s": 7, "target": "fear", "wrong": "hope", "why": "However로 앞의 기대와 반대 → 두려워함"}
+      {
+        "s": 2,
+        "target": "ingrained",
+        "wrong": "ignored",
+        "why": "너무 익숙해서 옛날을 상상하기 어렵다 → 깊이 배어든"
+      },
+      {
+        "s": 4,
+        "target": "common",
+        "wrong": "rare",
+        "why": "옛날엔 미래가 나아진다는 생각이 흔하지 않았음 (never common, much less popular)"
+      },
+      {
+        "s": 6,
+        "target": "advent",
+        "wrong": "adventure",
+        "why": "기술의 '출현' 이후"
+      },
+      {
+        "s": 7,
+        "target": "fear",
+        "wrong": "hope",
+        "why": "However로 앞의 기대와 반대 → 두려워함"
+      }
     ],
     "para": [
       [
@@ -341,18 +656,87 @@
   },
   "wrap": {
     "easy": [
-      ["주장", "기술이 생기면서 ‘새로운 것이 계속 나오는 게 당연하다’는 생각이 생겼다."],
-      ["대조", "지금은 변화가 너무 익숙해서, 옛날엔 그렇지 않았다는 게 잘 상상이 안 된다."],
-      ["과거", "몇백 년 전에는 세상이 아주 천천히 바뀌어서 ‘내일도 어제랑 비슷하겠지’ 하고 생각했다."],
-      ["강조", "그래서 ‘미래가 더 좋아질 거야’라는 생각은 흔하지도 않았고, 인기는 더더욱 없었다."],
-      ["전환점", "그런데 변화가 자꾸 일어나자, 사람들이 변화를 느끼고 오히려 기다리게 되었다."],
-      ["결과", "그래서 기술이 생긴 뒤로 사람들은 ‘미래엔 내 생활을 편하게 해 줄 새 물건이 나오겠지’ 하고 기대한다."],
-      ["반전", "하지만 요즘은 ‘변화가 너무 빠르고 커서 보통 사람은 못 따라가면 어쩌지?’ 하고 걱정한다."]
+      [
+        "주장",
+        "기술이 생기면서 ‘새로운 것이 계속 나오는 게 당연하다’는 생각이 생겼다."
+      ],
+      [
+        "대조",
+        "지금은 변화가 너무 익숙해서, 옛날엔 그렇지 않았다는 게 잘 상상이 안 된다."
+      ],
+      [
+        "과거",
+        "몇백 년 전에는 세상이 아주 천천히 바뀌어서 ‘내일도 어제랑 비슷하겠지’ 하고 생각했다."
+      ],
+      [
+        "강조",
+        "그래서 ‘미래가 더 좋아질 거야’라는 생각은 흔하지도 않았고, 인기는 더더욱 없었다."
+      ],
+      [
+        "전환점",
+        "그런데 변화가 자꾸 일어나자, 사람들이 변화를 느끼고 오히려 기다리게 되었다."
+      ],
+      [
+        "결과",
+        "그래서 기술이 생긴 뒤로 사람들은 ‘미래엔 내 생활을 편하게 해 줄 새 물건이 나오겠지’ 하고 기대한다."
+      ],
+      [
+        "반전",
+        "하지만 요즘은 ‘변화가 너무 빠르고 커서 보통 사람은 못 따라가면 어쩌지?’ 하고 걱정한다."
+      ]
     ],
     "topicEn": "the shift from expecting technological change to fearing its speed",
     "topicKo": "기술 변화를 기대하던 데서 그 속도를 걱정하게 된 변화",
     "titleEn": "From Expecting Progress to Fearing Its Speed",
     "titleKo": "발전을 기대하던 데서 그 속도를 두려워하기까지",
     "oneLine": "기술 덕분에 변화를 __기대__하게 됐지만, 이제는 변화가 __너무 빨라__ 걱정이다."
-  }
+  },
+  "fmarks": [
+    {
+      "s": 7,
+      "target": "fear",
+      "kind": "blank",
+      "type": "요지",
+      "why": "요지 '기술 변화를 기대하던 데서 이제는 그 속도를 두려워함' — However 뒤 결론"
+    },
+    {
+      "s": 3,
+      "target": "so slow",
+      "kind": "blank",
+      "type": "원인·결과",
+      "why": "원인 '변화가 너무 느려서' → 결과 '미래가 과거와 같을 거라 예상'"
+    },
+    {
+      "s": 6,
+      "target": "improve their daily lives",
+      "kind": "blank",
+      "type": "근거",
+      "why": "4번 'improvements in people’s lives'와 같은 뜻 — 옛날엔 드물던 기대가 이제는 당연해짐"
+    },
+    {
+      "s": 1,
+      "target": "came",
+      "kind": "grammar"
+    },
+    {
+      "s": 2,
+      "target": "wasn’t",
+      "kind": "grammar"
+    },
+    {
+      "s": 5,
+      "target": "perceptible",
+      "kind": "grammar"
+    },
+    {
+      "s": 6,
+      "target": "to bring",
+      "kind": "grammar"
+    },
+    {
+      "s": 7,
+      "target": "for normal people to assimilate them",
+      "kind": "write"
+    }
+  ]
 }

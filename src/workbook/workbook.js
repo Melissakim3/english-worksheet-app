@@ -27,8 +27,8 @@ const FLOW_COLORS = ['#e8c547', '#5bb974', '#e8829a', '#5b9bd5', '#a07cc5', '#e3
 // 워크북 구성 — 선생님이 골라서 만듦 (keys = 그 부분에 필요한 json 칸). 고르지 않으면 BASE 다섯 개 (원래 4쪽 워크북)
 export const PARTS = [
   { id: 'study', name: '문장 뜯어보기', keys: ['study'], desc: '문장마다 해석 · 논리 꼬리표 · 어법 · 단어/동의어/반의어' },
-  { id: 'flow', name: '흐름 지도', keys: ['flow', 'core'], desc: '흐름 단계별 문장 묶음 + 주제 · 요지 · 핵심 대조' },
-  { id: 'basic', name: 'Lv1~3 기본', keys: ['lv1', 'lv2', 'lv3'], desc: '단어 · 내용 O/X · 지칭 · 쉬운 말↔원문 · 흐름 3계단 · 문장 역할 · 연결어' },
+  { id: 'flow', name: '흐름 지도', keys: ['flow', 'core', 'fmarks'], desc: '흐름 단계별 문장 묶음(□ 빈칸 · 〰 어법 · ― 서술형 표시) + 주제 · 요지 · 핵심 대조' },
+  { id: 'basic', name: 'Lv1~3 기본', keys: ['lv1', 'lv2', 'lv3'], desc: '단어 · 내용 O/X · 지칭(㉠) · 순서 배열 · 핵심어(보기) · 내 말로 한 줄' },
   { id: 'exam', name: 'Lv4~5 수능·변형', keys: ['lv4', 'lv5'], desc: '지문 가리고: 제목 · 빈칸 · 문장 넣기 · 요약문 · 어법 · 어휘 · 바뀐 문장' },
   { id: 'wrap', name: '쉬운 말로 다시 읽기', keys: ['wrap'], desc: '1번부터 쉬운 말로 소리 내어 읽기 + 주제 · 제목 영어/한글 + 한 줄 요지' },
 ];
