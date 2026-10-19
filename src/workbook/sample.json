@@ -33,10 +33,6 @@
             [
               "extrinsic",
               "외적인"
-            ],
-            [
-              "external",
-              "외부의"
             ]
           ]
         },
@@ -85,10 +81,6 @@
             [
               "superficial",
               "피상적인"
-            ],
-            [
-              "temporary",
-              "일시적인"
             ]
           ]
         }
@@ -117,10 +109,6 @@
             [
               "rapid",
               "빠른"
-            ],
-            [
-              "swift",
-              "신속한"
             ]
           ]
         }
@@ -149,10 +137,6 @@
             [
               "deterioration",
               "악화"
-            ],
-            [
-              "decline",
-              "쇠퇴"
             ]
           ]
         }
@@ -181,10 +165,6 @@
             [
               "imperceptible",
               "감지할 수 없는"
-            ],
-            [
-              "invisible",
-              "보이지 않는"
             ]
           ]
         }
@@ -209,16 +189,7 @@
               "출현"
             ]
           ],
-          "ant": [
-            [
-              "departure",
-              "떠남"
-            ],
-            [
-              "disappearance",
-              "사라짐"
-            ]
-          ]
+          "ant": []
         }
       ]
     },
@@ -245,10 +216,6 @@
             [
               "superficial",
               "피상적인"
-            ],
-            [
-              "trivial",
-              "사소한"
             ]
           ]
         },
@@ -269,10 +236,6 @@
             [
               "reject",
               "거부하다"
-            ],
-            [
-              "resist",
-              "저항하다"
             ]
           ]
         }
@@ -503,7 +466,8 @@
     },
     "insert": {
       "given": 5,
-      "why": "All that = 3·4번의 옛날 상황, 뒤의 6번(Since the advent …)이 바뀐 결과"
+      "why": "All that = 3·4번의 옛날 상황, 뒤의 6번(Since the advent …)이 바뀐 결과",
+      "para": "All that shifted once changes started happening so frequently that they were not only noticeable but also anticipated."
     }
   },
   "lv5": {
