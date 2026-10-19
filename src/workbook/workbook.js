@@ -604,8 +604,8 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-frame{border:0.6px solid #9a9a9a;padding:6px 9px;margin:3px 0px 5px;line-height:2.1;break-inside:avoid}
 .w-frame .slot{display:inline-block;min-width:78px;border-bottom:0.8px solid #444444;margin:0px 3px;height:12px;vertical-align:-2px}
 .flowblock{break-inside:avoid}
-.fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
-.fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
+.fmap{display:grid;grid-template-columns:66px 1fr;column-gap:10px;margin:7px 0px}
+.fmap .fl b{font-size:7pt;font-weight:700;word-break:keep-all;overflow-wrap:anywhere;line-height:1.25}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
 .fmap .ft{font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.7;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
 .fmap .ft:nth-last-child(1){border-bottom:none}
