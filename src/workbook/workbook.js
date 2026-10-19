@@ -34,6 +34,37 @@ export const PARTS = [
 ];
 export const BASE_PARTS = ['study', 'flow', 'basic', 'exam', 'wrap'];
 
+// 2쪽 새 모양 (2026-10-19 선생님): 흐름 지도에 표시(□ 빈칸 · 점선 어법 · 밑줄 서술형 · ㉠ 지칭),
+//   2-B 흐름 배열(쉬운 말 카드 순서 + 역할) · 3-A 핵심어(보기 상자) · 3-B 내 말로 한 줄(틀 문장) · 3-C 연결어(보기, 진짜 연결어만)
+//   lv2.order가 있으면 새 모양, 없으면 예전 모양 그대로
+export const newBasic = (d) => Array.isArray(d?.lv2?.order);
+const REF_MARK = '㉠㉡㉢㉣㉤㉥㉦';
+const FMARK_RANGE = { blank: [2, 4], grammar: [3, 6], write: [1, 2] };
+const FMARK_NAME = { blank: '빈칸', grammar: '어법', write: '서술형' };
+export const CONNECTORS = ['However', 'For example', 'For instance', 'Therefore', 'Thus', 'In fact', 'In other words', 'Instead', 'Moreover', 'As a result', 'In addition', 'On the other hand', 'Similarly', 'But', 'Yet', 'Then', 'Indeed', 'Rather'];
+const CONN_ROLES = ['대조', '예시', '결과', '강조', '추가', '바꿔 말하기'];
+// 흐름 지도에 표시할 자리 (지칭 + 표시) — 문장마다 [시작, 끝, 종류]
+function flowSpans(d) {
+  const out = {};
+  const add = (s, target, kind, extra) => {
+    const at = findIn(d.sentences[s - 1] || '', target);
+    if (at) (out[s] ||= []).push({ at, kind, ...extra });
+    return at;
+  };
+  if (newBasic(d)) {
+    (d.lv2.refs || []).forEach((r, i) => add(r.s, r.target, 'ref', { no: REF_MARK[i] }));
+    // 3-C 연결어 자리는 흐름 지도에서 빈칸으로 (답이 보이지 않게)
+    (d.lv3?.conn || []).forEach((c, i) => { if (new RegExp(`^${c.answer}\\b`).test(d.sentences[c.s - 1] || '')) (out[c.s] ||= []).push({ at: [0, c.answer.length], kind: 'conn', no: CIRCLE[i] }); });
+  }
+  const blankAnswer = d.lv4?.blank?.options?.[d.lv4.blank.answer - 1];
+  for (const m of d.fmarks || []) {
+    // 4-B 빈칸 정답 낱말은 네모로 묶지 않음 (답이 보이므로)
+    if (m.kind === 'blank' && blankAnswer && String(m.target).toLowerCase().includes(String(blankAnswer).toLowerCase())) continue;
+    add(m.s, m.target, m.kind);
+  }
+  return out;
+}
+
 // 내용이 모양에 맞는지 먼저 봄 — 틀린 곳을 모두 모아 알려 줌 (빈 배열이면 통과)
 //   parts: 고른 구성만 검사 (안 주면 BASE_PARTS)
 export function checkWorkbook(d, parts = BASE_PARTS) {
@@ -66,9 +97,46 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
   }
   if (has('basic')) {
     (d?.lv1?.ox || []).forEach(([, a, k], i) => { if (!['O', 'X'].includes(a)) errs.push(`1-B ${i + 1}: 답은 O 또는 X`); inRange(k, `1-B ${i + 1}`); });
-    (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
-    if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
-    if ((d?.lv3?.order || []).length !== (d?.lv3?.cards || []).length) errs.push('3-A: 순서와 카드 개수가 다름');
+    if (newBasic(d)) {
+      const S = d.sentences || [];
+      const spans = {};
+      const place = (s, target, where) => {
+        if (!(Number.isInteger(s) && s >= 1 && s <= n)) return errs.push(`${where}: 문장 번호 ${s}가 1~${n} 밖`);
+        const at = findIn(S[s - 1], target);
+        if (!at) return errs.push(`${where}: "${target}"가 ${s}번 문장에 그대로 없음`);
+        const list = (spans[s] ||= []);
+        if (list.some(([a, b]) => at[0] < b && a < at[1])) errs.push(`${where}: ${s}번 문장에서 다른 표시와 겹침`);
+        list.push(at);
+      };
+      const refs = d.lv2.refs || [];
+      if (refs.length < 2 || refs.length > REF_MARK.length) errs.push(`2-A: 지칭은 2~${REF_MARK.length}개`);
+      refs.forEach((r, i) => { place(r.s, r.target, `2-A ${i + 1}`); if (!r.answer) errs.push(`2-A ${i + 1}: answer 없음`); });
+      const count = { blank: 0, grammar: 0, write: 0 };
+      (d.fmarks || []).forEach((m, i) => {
+        if (!(m.kind in count)) return errs.push(`흐름 지도 표시 ${i + 1}: kind는 blank · grammar · write`);
+        count[m.kind]++;
+        place(m.s, m.target, `흐름 지도 ${FMARK_NAME[m.kind]} 표시`);
+      });
+      for (const [k, [lo, hi]] of Object.entries(FMARK_RANGE)) if (count[k] < lo || count[k] > hi) errs.push(`흐름 지도: ${FMARK_NAME[k]} 표시는 ${lo}~${hi}개 (지금 ${count[k]}개)`);
+      const order = d.lv2.order;
+      if (order.length < 4 || order.length > 7) errs.push('2-B: 흐름 카드는 4~7개');
+      if (order.some((c) => !Array.isArray(c) || !c[0] || !c[1])) errs.push('2-B: 카드마다 [쉬운 말, 역할]');
+      const keys = d.lv3?.keys;
+      if (!keys?.lines?.length || keys.lines.length < 4 || keys.lines.length > 6) errs.push('3-A: 핵심어 문장은 4~6개');
+      (keys?.lines || []).forEach(([t, a], i) => { if (!/_{3,}/.test(t || '') || !a) errs.push(`3-A ${i + 1}: 빈칸(____)과 답이 있어야 함`); });
+      if (!keys?.extra?.length || keys.extra.length > 3) errs.push('3-A: 보기에 섞을 헷갈리는 낱말 1~3개');
+      if (((d.lv3?.frame?.text || '').match(/\(\s*\)/g) || []).length < 2) errs.push('3-B: 틀 문장에 ( ) 칸이 2개 이상');
+      (d.lv3?.conn || []).forEach((c, i) => {
+        if (!(Number.isInteger(c.s) && c.s >= 2 && c.s <= n)) return errs.push(`3-C ${i + 1}: 문장 번호는 2~${n}`);
+        if (!CONNECTORS.includes(c.answer) || !new RegExp(`^${c.answer}\\b`).test(S[c.s - 1])) errs.push(`3-C ${i + 1}: ${c.s}번 문장이 연결어 "${c.answer}"로 시작해야 함`);
+        if (!CONN_ROLES.includes(c.role)) errs.push(`3-C ${i + 1}: 하는 일은 ${CONN_ROLES.join('·')} 중 하나`);
+      });
+      if ((d.lv3?.conn || []).length > 3) errs.push('3-C: 연결어는 3개까지');
+    } else {
+      (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
+      if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
+      if ((d?.lv3?.order || []).length !== (d?.lv3?.cards || []).length) errs.push('3-A: 순서와 카드 개수가 다름');
+    }
   }
   if (has('exam')) {
     five(d?.lv4?.title, '4-A');
@@ -199,10 +267,66 @@ ${d.sentences.map((s, i) => { const t = d.study[i]; return `<tr><td class="en"><
 
 function flowPage(d) {
   const T = esc(d.title);
+  const spans = flowSpans(d);
+  const marked1 = (k) => {
+    const sent = d.sentences[k - 1];
+    const list = (spans[k] || []).sort((a, b) => a.at[0] - b.at[0]);
+    let out = '';
+    let pos = 0;
+    for (const m of list) {
+      out += esc(sent.slice(pos, m.at[0]));
+      const t = esc(sent.slice(m.at[0], m.at[1]));
+      out += m.kind === 'ref' ? `<span class="fm-ref">${m.no}</span>${t}` : m.kind === 'conn' ? `<span class="fm-conn">( 3-C ${m.no} )</span>` : `<span class="fm-${m.kind}">${t}</span>`;
+      pos = m.at[1];
+    }
+    return out + esc(sent.slice(pos));
+  };
+  const legend = Object.keys(spans).length
+    ? `<em class="fm-legend"><u class="fm-blank">빈칸</u> <u class="fm-grammar">어법</u> <u class="fm-write">서술형</u> 나올 곳${newBasic(d) ? ' · ㉠ 지칭(2-A)' : ''}${(d.lv3?.conn || []).length ? ' · ( 3-C ) 연결어 빈칸' : ''}</em>`
+    : '';
   return `
-<div class="stage first"><span>STAGE 2</span>흐름 지도<em class="pname">${T}</em></div>
-<div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map((k) => esc(d.sentences[k - 1])).join(' ')}</div>`).join('')}</div>
+<div class="stage first"><span>STAGE 2</span>흐름 지도${legend}<em class="pname">${T}</em></div>
+<div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map(marked1).join(' ')}</div>`).join('')}</div>
 <div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div>
+`;
+}
+
+// 새 Lv2 · Lv3 (흐름 지도 표시와 짝) — 섞는 자리는 같은 지문이면 늘 같게
+function newBasicPlan(d) {
+  const rnd = seeded(`${d.title}|basic|${d.sentences.join(' ')}`);
+  const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (a.length > 1 && a.every((x, i) => x === arr[i])) a.push(a.shift()); return a; };
+  const GA = '가나다라마바사';
+  const cards = shuffle(d.lv2.order.map(([t, role], i) => ({ t, role, i })));
+  cards.forEach((c, k) => { c.label = GA[k]; });
+  const roles = shuffle([...new Set(d.lv2.order.map(([, r]) => r))]);
+  const words = shuffle([...d.lv3.keys.lines.map(([, a]) => a), ...d.lv3.keys.extra]);
+  const conn = d.lv3.conn || [];
+  const connBox = conn.length ? shuffle([...conn.map((c) => c.answer), ...shuffle(CONNECTORS.filter((c) => !conn.some((x) => x.answer === c))).slice(0, 5 - conn.length)]) : [];
+  return { cards, roles, words, connBox, order: d.lv2.order.map((_, i) => cards.find((c) => c.i === i).label) };
+}
+const CHIP = (x) => `<span class="chip">${esc(x)}</span>`;
+function newLv23(d) {
+  const { lv2, lv3 } = d;
+  const P = newBasicPlan(d);
+  const slot = '<span class="slot"></span>';
+  return `
+${LV(2, '정확히 이해하기')}
+${Q('2-A', '지칭', '흐름 지도의 ㉠㉡…이 가리키는 것을 우리말로')}
+${LIST(lv2.refs.map((r, i) => `${REF_MARK[i]} ${esc(r.target)}`), { fill: '58%', nw: true })}
+${Q('2-B', '흐름 배열', '① 순서대로 배열 ② 카드마다 역할 고르기')}
+<div class="w-box">${P.cards.map((c) => `<div>(${c.label}) ${esc(c.t)}<span class="rl">역할 (　　　　)</span></div>`).join('')}</div>
+<div class="w-box chips"><b>역할 보기</b>${P.roles.map(CHIP).join('')}</div>
+<div class="w-sub">① 순서　${P.cards.map(() => '(　 )').join(' → ')}</div>
+
+${LV(3, '흐름 잡기')}
+${Q('3-A', '핵심어', '보기에서 골라 쓰기 (2개는 남음)')}
+<div class="w-box chips">${P.words.map(CHIP).join('')}</div>
+${LIST(lv3.keys.lines.map(([t]) => esc(t)), { cls: 'en' })}
+${Q('3-B', '내 말로 한 줄', '빈칸만 채우면 요지 완성')}
+<div class="w-frame">${esc(lv3.frame.text).replace(/\(\s*\)/g, slot)}</div>
+${(lv3.conn || []).length ? `${Q('3-C', '연결어', '흐름 지도 ( 3-C ① ) 자리에 알맞은 말과 하는 일')}
+<div class="w-box chips">${P.connBox.map(CHIP).join('')}<br><b>하는 일</b>${CONN_ROLES.map(CHIP).join('')}</div>
+<div class="w-sub">${lv3.conn.map((c, i) => `${CIRCLE[i]} (${c.s}번 앞) 　　　　　　　 하는 일 (　　　)`).join('<br>')}</div>` : ''}
 `;
 }
 
@@ -218,7 +342,7 @@ ${Q('1-A', '단어', '뜻을 쓰세요.')}
 ${Q('1-B', '내용 O / X', '맞으면 O, 틀리면 X와 근거 문장 번호')}
 ${LIST(lv1.ox.map(([t]) => esc(t)), { mark: 'O · X　(　)', nw: true })}
 
-${LV(2, '정확히 이해하기')}
+${newBasic(d) ? newLv23(d) : `${LV(2, '정확히 이해하기')}
 ${Q('2-A', '지칭', '가리키는 것을 우리말로')}
 ${LIST(lv2.refs.map(([w]) => esc(w)), { fill: '62%' })}
 ${Q('2-B', '쉬운 말 ↔ 원문', '원문 몇 번 문장인지')}
@@ -236,7 +360,7 @@ ${Q('3-B', '문장별 역할', '같은 보기를 여러 번 써도 됨')}
 <div class="w-box c">${esc(lv3.roleChoices)}</div>
 <div class="w-sub">${d.sentences.map((_, i) => `${i + 1}번 (　)`).join('　 ')}</div>
 ${Q('3-C', '연결어 빈칸', '빈칸에 쓰고, 오른쪽에 하는 일')}
-${LIST(lv3.conn.map(([t]) => esc(t)), { fill: '40px', nw: true })}
+${LIST(lv3.conn.map(([t]) => esc(t)), { fill: '40px', nw: true })}`}
 `;
   const exam = () => `
 ${LV(4, '수능형으로 풀기', '지문을 가리고 풀기')}
@@ -284,14 +408,23 @@ function answerPage(d, has) {
   const AL = (arr) => arr.map((v, i) => `<span>${i + 1}) ${v}</span>`).join('');
   const one = (q, opt = false) => `<span><b>${CIRCLE[q.answer - 1]}${opt ? ` ${esc(q.options[q.answer - 1])}` : ''}</b> ${esc(q.why || '')}</span>`;
   const ins = has('exam') && canInsert(d.sentences.length) && insertPassage(d.sentences, lv4.insert.given);
-  const basic = () => `
+  const P = has('basic') && newBasic(d) && newBasicPlan(d);
+  const basicNew = () => `
+${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
+${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
+${A('2-A', lv2.refs.map((r, i) => `<span>${REF_MARK[i]} ${esc(r.target)} → <b>${esc(r.answer)}</b></span>`).join(''))}
+${A('2-B', `<span><b>${P.order.map((l) => `(${l})`).join(' → ')}</b></span>${P.cards.map((c) => `<span>(${c.label}) ${esc(c.role)}</span>`).join('')}`)}
+${A('3-A', AL(lv3.keys.lines.map(([, a]) => `<b>${esc(a)}</b>`)))}
+${A('3-B', `<span>예: ${esc(lv3.frame.example || '')}</span>`)}
+${(lv3.conn || []).length ? A('3-C', AL(lv3.conn.map((c) => `<b>${esc(c.answer)}</b> ${esc(c.role)} (${c.s}번)`))) : ''}`;
+  const basic = () => (P ? basicNew() : `
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
 ${A('2-A', AL(lv2.refs.map(([, a]) => esc(a))))}
 ${A('2-B', AL(lv2.easy.map(([, n]) => `${n}번`)))}
 ${A('3-A', `<span>① ${lv3.order.map((k) => `(${esc(k)})`).join(' → ')}</span><span>② ${lv3.steps.map(([, , a]) => esc(a)).join(' / ')}</span>${lv3.ownWords ? `<span>③ 예: ${esc(lv3.ownWords)}</span>` : ''}`)}
 ${A('3-B', AL(lv3.roles.map(esc)))}
-${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`;
+${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`);
   const exam = () => `
 ${A('4-A', one(lv4.title))}
 ${A('4-B', one(lv4.blank, true))}
@@ -455,6 +588,23 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v{padding:5px 0px;border-bottom:0.5px solid #e4e4e4;line-height:1.6}
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
+.fm-blank{border:0.9px solid #222222;padding:0px 2px;border-radius:1px}
+.fm-grammar{text-decoration:underline dotted #222222;text-decoration-thickness:1.2px;text-underline-offset:2.5px}
+.fm-write{text-decoration:underline solid #222222;text-decoration-thickness:0.9px;text-underline-offset:2.5px}
+.fm-ref{font-family:"Noto Sans KR", sans-serif;font-size:7pt;margin-right:1px;vertical-align:1px}
+.stage .fm-legend{margin-left:14px;font-style:normal;font-size:7pt;font-weight:400;color:#3a3a3a;letter-spacing:0px}
+.fm-legend u{text-decoration-line:none;margin-right:4px}
+.fm-legend u.fm-grammar,.fm-legend u.fm-write{text-decoration-line:underline}
+.fm-conn{font-family:"Noto Sans KR", sans-serif;font-size:7.4pt;font-weight:700;white-space:nowrap}
+.w-box.chips{text-align:center;line-height:1.55;padding:3px 6px;font-size:7.3pt}
+.w-box.chips .chip{display:inline-block;white-space:nowrap;margin:0px 6px}
+.w-box.chips b{margin-right:4px;font-size:6.8pt}
+.w-box .rl{float:right;color:#4d4d4d;font-size:7pt}
+.w-frame{border:0.6px solid #9a9a9a;padding:6px 9px;margin:3px 0px 5px;line-height:2.1;break-inside:avoid}
+.w-frame .slot{display:inline-block;min-width:78px;border-bottom:0.8px solid #444444;margin:0px 3px;height:12px;vertical-align:-2px}
+.w-conn{display:flex;gap:6px;align-items:baseline;margin:3px 0px;break-inside:avoid}
+.w-conn .en{flex:1 1 auto;font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.5}
+.w-conn .m{flex:0 0 auto;font-size:6.8pt;color:#4d4d4d;white-space:nowrap}
 .fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
