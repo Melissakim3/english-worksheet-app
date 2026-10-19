@@ -141,6 +141,9 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
     else {
       inRange(ins.given, '4-C given');
       if (ins.given === 1) errs.push('4-C: 첫 문장은 주어진 문장으로 쓰지 않음 (앞에 끼울 자리가 없음)');
+      // 주어진 문장은 바꿔 써서(para) 앞 쪽 원문에서 그대로 찾아 맞히지 못하게 — 자리 단서(연결어·지시어·대명사)는 남김
+      const org = d.sentences[ins.given - 1] || '';
+      if (ins.para != null && (!String(ins.para).trim() || ins.para.trim() === org.trim())) errs.push('4-C: para는 원문과 다르게 바꿔 쓴 문장');
     }
     (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
     if (grammarInPassage(d?.lv5?.grammar) || grammarInPassage(d?.lv5?.vocab)) checkPassageMarks(d, errs);
@@ -245,7 +248,8 @@ const EN = (t) => `<div class="w-en">${esc(t)}</div>`;
 const OPTS = (arr, inline = false) => `<div class="w-opt ${inline ? 'in' : ''}">${arr.map((o, i) => `<span>${CIRCLE[i]} ${esc(o)}</span>`).join('')}</div>`;
 
 // 단어 칸: 영어 · 뜻 두 줄로 세로 맞춤, S(동의어 초록) · A(반의어 빨강) 글자는 첫 줄에만
-const wordRows = (k, list) => list.map(([en, ko], j) => `<span class="lb ${k}">${j ? '' : (k === 'syn' ? 'S' : 'A')}</span><span class="e ${k}">${esc(en)}</span><span class="k">${esc(ko)}</span>`).join('');
+// 두 번째 동의어부터는 x(덤): 그 문장 칸이 덤 없을 때보다 높아지지 않을 때만 보임 (CONT_SCRIPT가 재서 정함 — 쪽수는 그대로)
+const wordRows = (k, list) => list.map(([en, ko], j) => { const x = k === 'syn' && j ? ' x' : ''; return `<span class="lb ${k}${x}">${j ? '' : (k === 'syn' ? 'S' : 'A')}</span><span class="e ${k}${x}">${esc(en)}</span><span class="k${x}">${esc(ko)}</span>`; }).join('');
 const wordBlock = (w) => `<div class="wg"><span class="lb"></span><b class="e">${esc(w.en)}</b><span class="k hk">${esc(w.ko)}</span>${wordRows('syn', w.syn || [])}${wordRows('ant', w.ant || [])}</div>`;
 const range = (s) => (s.length > 1 ? `${s[0]}~${s[s.length - 1]}` : `${s[0]}`);
 
@@ -356,7 +360,7 @@ ${Q('4-B', '빈칸 추론', '가장 적절한 것은?')}
 ${EN(lv4.blank.sentence)}
 ${OPTS(lv4.blank.options, true)}
 ${ins ? `${Q('4-C', '문장 넣기', '주어진 문장이 들어갈 곳은?')}
-${EN(d.sentences[lv4.insert.given - 1])}
+${EN(lv4.insert.para || d.sentences[lv4.insert.given - 1])}
 <div class="w-box en">${ins.html}</div>` : ''}
 
 ${LV(5, '변형까지 대비하기', '지문을 가리고 풀기')}
@@ -445,7 +449,7 @@ function workbookBody(d, parts = BASE_PARTS) {
     has('flow') && flowPage(d),
     (has('basic') || has('exam') || has('wrap')) && problemPages(d, has),
   ].filter(Boolean);
-  // 문장 뜯어보기가 한 쪽을 넘으면 넘친 문장 바로 뒤에 흐름 지도가 이어짐 (빈 쪽 없이) — 넘치는 곳에는 '다음 쪽에 이어집니다' 표시 (CONT_SCRIPT)
+  // 문장 뜯어보기가 한 쪽을 넘으면 넘친 문장 바로 뒤에 흐름 지도가 이어짐 (빈 쪽 없이) — 넘치는 곳에는 'N번부터 다음 쪽 ▶' 표시 (CONT_SCRIPT)
   const frontHtml = front.join('');
   return { front: frontHtml, answers: answerPage(d, has) };
 }
@@ -456,7 +460,7 @@ ${WORKBOOK_CSS}
 </style></head><body>
 ${body}<script>${CONT_SCRIPT}</script></body></html>`;
 
-// 문장 뜯어보기가 첫 쪽을 넘으면, 넘어가는 문장 바로 앞에 '▼ 다음 쪽에 이어집니다' 줄을 넣음
+// 문장 뜯어보기가 첫 쪽을 넘으면, 넘어가는 문장 바로 앞에 'N번부터 다음 쪽 ▶' 줄을 넣음
 //   인쇄 쪽(A4 − 위 6mm · 아래 9mm, 너비 192mm)과 같은 너비로 재서 정함. 다 되면 <html data-ready="1"> (PDF 스크립트 · 앱 인쇄가 기다림)
 const CONT_SCRIPT = `(async () => {
   try { await document.fonts.ready; } catch (e) {}
@@ -465,6 +469,18 @@ const CONT_SCRIPT = `(async () => {
   root.style.width = '192mm';
   const PAGE = 282 * 96 / 25.4, MARK = 22, y = (el) => el.getBoundingClientRect().top + window.scrollY;
   const first = document.querySelector('section');
+  // 덤 동의어: 모두 숨긴 높이를 재고, 하나씩 켜 보아 줄 높이가 커지면 다시 숨김
+  for (const tr of document.querySelectorAll('table.study tbody tr')) {
+    const groups = [];
+    for (const wg of tr.querySelectorAll('.wg')) { const xs = [...wg.querySelectorAll('.x')]; for (let j = 0; j < xs.length; j += 3) groups.push(xs.slice(j, j + 3)); }
+    if (!groups.length) continue;
+    groups.flat().forEach((e) => e.classList.add('off'));
+    const h0 = tr.getBoundingClientRect().height;
+    for (const g of groups) {
+      g.forEach((e) => e.classList.remove('off'));
+      if (tr.getBoundingClientRect().height > h0 + 0.5) g.forEach((e) => e.classList.add('off'));
+    }
+  }
   for (const t of document.querySelectorAll('table.study')) {
     const sec = t.closest('section');
     const top = !sec || sec === first ? 0 : y(sec);
@@ -476,7 +492,7 @@ const CONT_SCRIPT = `(async () => {
     if (i > 0) {
       const tr = document.createElement('tr');
       tr.className = 'cont';
-      tr.innerHTML = '<td colspan="3">▼ 다음 쪽에 이어집니다 (' + (i + 1) + '번 문장부터)</td>';
+      tr.innerHTML = '<td colspan="3">' + (i + 1) + '번부터 다음 쪽 ▶</td>';
       rows[i].before(tr);
     }
   }
@@ -616,6 +632,7 @@ table.study td.ko .tr{border-bottom:none !important;margin:0px !important;paddin
 .wg .k{font-size:6.6pt;color:#333333;word-break:keep-all;overflow-wrap:anywhere}
 .wg .hk{align-self:baseline}
 .wg .lb{font-size:6.2pt;font-weight:700}
+.wg .off{display:none}
 .wg .lb.syn,.wg .e.syn{color:#1d6b3a}
 .wg .lb.ant,.wg .e.ant{color:#b02a1e}
 .wg .lb.syn:not(:empty),.wg .lb.ant:not(:empty){padding-top:0px}

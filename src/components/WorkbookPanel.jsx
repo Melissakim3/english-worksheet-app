@@ -104,7 +104,7 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
     f.onload = async () => {
       const w = f.contentWindow
       await w.document.fonts?.ready
-      // '다음 쪽에 이어집니다' 표시를 다 넣을 때까지 (최대 3초)
+      // 'N번부터 다음 쪽' 표시를 다 넣을 때까지 (최대 3초)
       for (let i = 0; i < 30 && w.document.documentElement.dataset.ready !== '1'; i++) await new Promise((r) => setTimeout(r, 100))
       w.focus()
       w.print()
