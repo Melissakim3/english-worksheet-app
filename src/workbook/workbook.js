@@ -27,12 +27,36 @@ const FLOW_COLORS = ['#e8c547', '#5bb974', '#e8829a', '#5b9bd5', '#a07cc5', '#e3
 // 워크북 구성 — 선생님이 골라서 만듦 (keys = 그 부분에 필요한 json 칸). 고르지 않으면 BASE 다섯 개 (원래 4쪽 워크북)
 export const PARTS = [
   { id: 'study', name: '문장 뜯어보기', keys: ['study'], desc: '문장마다 해석 · 논리 꼬리표 · 어법 · 단어/동의어/반의어' },
-  { id: 'flow', name: '흐름 지도', keys: ['flow', 'core'], desc: '흐름 단계별 문장 묶음 + 주제 · 요지 · 핵심 대조' },
-  { id: 'basic', name: 'Lv1~3 기본', keys: ['lv1', 'lv2', 'lv3'], desc: '단어 · 내용 O/X · 지칭 · 쉬운 말↔원문 · 흐름 3계단 · 문장 역할 · 연결어' },
+  { id: 'flow', name: '흐름 지도', keys: ['flow', 'core', 'fmarks'], desc: '흐름 단계별 문장 묶음(□ 빈칸 · 〰 어법 · ― 서술형 표시) + 주제 · 요지 · 핵심 대조' },
+  { id: 'basic', name: 'Lv1~3 기본', keys: ['lv1', 'lv2', 'lv3'], desc: '단어 · 내용 O/X · 지칭(㉠) · 순서 배열 · 핵심어(보기) · 내 말로 한 줄' },
   { id: 'exam', name: 'Lv4~5 수능·변형', keys: ['lv4', 'lv5'], desc: '지문 가리고: 제목 · 빈칸 · 문장 넣기 · 요약문 · 어법 · 어휘 · 바뀐 문장' },
   { id: 'wrap', name: '쉬운 말로 다시 읽기', keys: ['wrap'], desc: '1번부터 쉬운 말로 소리 내어 읽기 + 주제 · 제목 영어/한글 + 한 줄 요지' },
 ];
 export const BASE_PARTS = ['study', 'flow', 'basic', 'exam', 'wrap'];
+
+// 2쪽 새 모양 (2026-10-19 선생님): 흐름 지도에 표시(□ 빈칸 · 점선 어법 · 밑줄 서술형 · ㉠ 지칭),
+//   2-B 순서 배열(모든 문장의 쉬운 말을 섞어서 · 역할은 뺌) · 3-A 핵심어(보기 상자) · 3-B 내 말로 한 줄(틀 문장). 연결어 문제는 뺌
+//   □ 빈칸 기준(선생님): type 요지(주제·요지 속 말) · 원인·결과(왜→그래서 부분) · 근거(같은 뜻이 다른 문장에 — why에 'N번'), 이유 없으면 네모 X
+//   lv3.keys가 있으면 새 모양, 없으면 예전 모양 그대로
+export const newBasic = (d) => !!d?.lv3?.keys;
+const REF_MARK = '㉠㉡㉢㉣㉤㉥㉦';
+const FMARK_RANGE = { blank: [2, 4], grammar: [3, 6], write: [1, 2] };
+const FMARK_NAME = { blank: '빈칸', grammar: '어법', write: '서술형' };
+export const BLANK_TYPES = ['요지', '원인·결과', '근거'];
+// 흐름 지도에 표시할 자리 (지칭 + 표시) — 문장마다 [시작, 끝, 종류]
+function flowSpans(d) {
+  const out = {};
+  const add = (s, target, kind, extra) => {
+    const at = findIn(d.sentences[s - 1] || '', target);
+    if (at) (out[s] ||= []).push({ at, kind, ...extra });
+    return at;
+  };
+  if (newBasic(d)) {
+    (d.lv2.refs || []).forEach((r, i) => add(r.s, r.target, 'ref', { no: REF_MARK[i] }));
+  }
+  for (const m of d.fmarks || []) add(m.s, m.target, m.kind);
+  return out;
+}
 
 // 내용이 모양에 맞는지 먼저 봄 — 틀린 곳을 모두 모아 알려 줌 (빈 배열이면 통과)
 //   parts: 고른 구성만 검사 (안 주면 BASE_PARTS)
@@ -66,9 +90,46 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
   }
   if (has('basic')) {
     (d?.lv1?.ox || []).forEach(([, a, k], i) => { if (!['O', 'X'].includes(a)) errs.push(`1-B ${i + 1}: 답은 O 또는 X`); inRange(k, `1-B ${i + 1}`); });
-    (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
-    if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
-    if ((d?.lv3?.order || []).length !== (d?.lv3?.cards || []).length) errs.push('3-A: 순서와 카드 개수가 다름');
+    if (newBasic(d)) {
+      const S = d.sentences || [];
+      const spans = {};
+      const place = (s, target, where) => {
+        if (!(Number.isInteger(s) && s >= 1 && s <= n)) return errs.push(`${where}: 문장 번호 ${s}가 1~${n} 밖`);
+        const at = findIn(S[s - 1], target);
+        if (!at) return errs.push(`${where}: "${target}"가 ${s}번 문장에 그대로 없음`);
+        const list = (spans[s] ||= []);
+        if (list.some(([a, b]) => at[0] < b && a < at[1])) errs.push(`${where}: ${s}번 문장에서 다른 표시와 겹침`);
+        list.push(at);
+      };
+      const refs = d.lv2.refs || [];
+      if (refs.length < 2 || refs.length > REF_MARK.length) errs.push(`2-A: 지칭은 2~${REF_MARK.length}개`);
+      refs.forEach((r, i) => { place(r.s, r.target, `2-A ${i + 1}`); if (!r.answer) errs.push(`2-A ${i + 1}: answer 없음`); });
+      const count = { blank: 0, grammar: 0, write: 0 };
+      (d.fmarks || []).forEach((m, i) => {
+        if (!(m.kind in count)) return errs.push(`흐름 지도 표시 ${i + 1}: kind는 blank · grammar · write`);
+        count[m.kind]++;
+        place(m.s, m.target, `흐름 지도 ${FMARK_NAME[m.kind]} 표시`);
+        if (m.kind === 'blank') {
+          if (!BLANK_TYPES.includes(m.type)) errs.push(`흐름 지도 빈칸 "${m.target}": type은 ${BLANK_TYPES.join(' · ')} 중 하나`);
+          if (!m.why) errs.push(`흐름 지도 빈칸 "${m.target}": why(이유) 없음`);
+          const k = Number((String(m.why || '').match(/(\d+)\s*번/) || [])[1]);
+          if (m.type === '근거' && (!k || k === m.s || k > n)) errs.push(`흐름 지도 빈칸 "${m.target}": 근거는 why에 다른 문장 번호('N번 …')가 있어야 함`);
+        }
+      });
+      for (const [k, [lo, hi]] of Object.entries(FMARK_RANGE)) if (count[k] < lo || count[k] > hi) errs.push(`흐름 지도: ${FMARK_NAME[k]} 표시는 ${lo}~${hi}개 (지금 ${count[k]}개)`);
+      const easyNo = (d.lv2.easy || []).map(([, k]) => k).sort((a, b) => a - b);
+      if (easyNo.length !== n || easyNo.some((k, i) => k !== i + 1)) errs.push(`2-B: 쉬운 말(lv2.easy)이 문장 ${n}개마다 하나씩`);
+      if (!(d.fmarks || []).some((m) => m.kind === 'blank' && m.type === '요지')) errs.push('흐름 지도: 요지 빈칸(□)이 하나는 있어야 함');
+      const keys = d.lv3?.keys;
+      if (!keys?.lines?.length || keys.lines.length < 4 || keys.lines.length > 6) errs.push('3-A: 핵심어 문장은 4~6개');
+      (keys?.lines || []).forEach(([t, a], i) => { if (!/_{3,}/.test(t || '') || !a) errs.push(`3-A ${i + 1}: 빈칸(____)과 답이 있어야 함`); });
+      if (!keys?.extra?.length || keys.extra.length > 3) errs.push('3-A: 보기에 섞을 헷갈리는 낱말 1~3개');
+      if (((d.lv3?.frame?.text || '').match(/\(\s*\)/g) || []).length < 2) errs.push('3-B: 틀 문장에 ( ) 칸이 2개 이상');
+    } else {
+      (d?.lv2?.easy || []).forEach(([, k], i) => inRange(k, `2-B ${i + 1}`));
+      if ((d?.lv3?.roles || []).length !== n) errs.push(`3-B: 문장 ${n}개마다 역할 하나씩`);
+      if ((d?.lv3?.order || []).length !== (d?.lv3?.cards || []).length) errs.push('3-A: 순서와 카드 개수가 다름');
+    }
   }
   if (has('exam')) {
     five(d?.lv4?.title, '4-A');
@@ -80,6 +141,9 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
     else {
       inRange(ins.given, '4-C given');
       if (ins.given === 1) errs.push('4-C: 첫 문장은 주어진 문장으로 쓰지 않음 (앞에 끼울 자리가 없음)');
+      // 주어진 문장은 바꿔 써서(para) 앞 쪽 원문에서 그대로 찾아 맞히지 못하게 — 자리 단서(연결어·지시어·대명사)는 남김
+      const org = d.sentences[ins.given - 1] || '';
+      if (ins.para != null && (!String(ins.para).trim() || ins.para.trim() === org.trim())) errs.push('4-C: para는 원문과 다르게 바꿔 쓴 문장');
     }
     (d?.lv5?.para || []).forEach(([, k], i) => inRange(k, `5-D ${i + 1}`));
     if (grammarInPassage(d?.lv5?.grammar) || grammarInPassage(d?.lv5?.vocab)) checkPassageMarks(d, errs);
@@ -184,7 +248,8 @@ const EN = (t) => `<div class="w-en">${esc(t)}</div>`;
 const OPTS = (arr, inline = false) => `<div class="w-opt ${inline ? 'in' : ''}">${arr.map((o, i) => `<span>${CIRCLE[i]} ${esc(o)}</span>`).join('')}</div>`;
 
 // 단어 칸: 영어 · 뜻 두 줄로 세로 맞춤, S(동의어 초록) · A(반의어 빨강) 글자는 첫 줄에만
-const wordRows = (k, list) => list.map(([en, ko], j) => `<span class="lb ${k}">${j ? '' : (k === 'syn' ? 'S' : 'A')}</span><span class="e ${k}">${esc(en)}</span><span class="k">${esc(ko)}</span>`).join('');
+// 두 번째 동의어부터는 x(덤): 그 문장 칸이 덤 없을 때보다 높아지지 않을 때만 보임 (CONT_SCRIPT가 재서 정함 — 쪽수는 그대로)
+const wordRows = (k, list) => list.map(([en, ko], j) => { const x = k === 'syn' && j ? ' x' : ''; return `<span class="lb ${k}${x}">${j ? '' : (k === 'syn' ? 'S' : 'A')}</span><span class="e ${k}${x}">${esc(en)}</span><span class="k${x}">${esc(ko)}</span>`; }).join('');
 const wordBlock = (w) => `<div class="wg"><span class="lb"></span><b class="e">${esc(w.en)}</b><span class="k hk">${esc(w.ko)}</span>${wordRows('syn', w.syn || [])}${wordRows('ant', w.ant || [])}</div>`;
 const range = (s) => (s.length > 1 ? `${s[0]}~${s[s.length - 1]}` : `${s[0]}`);
 
@@ -199,10 +264,58 @@ ${d.sentences.map((s, i) => { const t = d.study[i]; return `<tr><td class="en"><
 
 function flowPage(d) {
   const T = esc(d.title);
+  const spans = flowSpans(d);
+  const marked1 = (k) => {
+    const sent = d.sentences[k - 1];
+    const list = (spans[k] || []).sort((a, b) => a.at[0] - b.at[0]);
+    let out = '';
+    let pos = 0;
+    for (const m of list) {
+      out += esc(sent.slice(pos, m.at[0]));
+      const t = esc(sent.slice(m.at[0], m.at[1]));
+      out += m.kind === 'ref' ? `<span class="fm-ref">${m.no}</span>${t}` : `<span class="fm-${m.kind}">${t}</span>`;
+      pos = m.at[1];
+    }
+    return out + esc(sent.slice(pos));
+  };
+  const legend = Object.keys(spans).length
+    ? `<em class="fm-legend"><u class="fm-blank">빈칸</u> <u class="fm-grammar">어법</u> <u class="fm-write">서술형</u> 나올 곳${newBasic(d) ? ' · ㉠ 지칭(2-A)' : ''}</em>`
+    : '';
+  // 흐름 지도는 통째로: 남은 자리에 다 들어가면 바로 이어 붙이고, 안 들어가면 남은 자리는 비우고 다음 쪽에서 시작
   return `
-<div class="stage first"><span>STAGE 2</span>흐름 지도<em class="pname">${T}</em></div>
-<div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map((k) => esc(d.sentences[k - 1])).join(' ')}</div>`).join('')}</div>
-<div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div>
+<div class="flowblock"><div class="stage first"><span>STAGE 2</span>흐름 지도${legend}<em class="pname">${T}</em></div>
+<div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map(marked1).join(' ')}</div>`).join('')}</div>
+<div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div></div>
+`;
+}
+
+// 새 Lv2 · Lv3 (흐름 지도 표시와 짝) — 섞는 자리는 같은 지문이면 늘 같게
+function newBasicPlan(d) {
+  const rnd = seeded(`${d.title}|basic|${d.sentences.join(' ')}`);
+  const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (a.length > 1 && a.every((x, i) => x === arr[i])) a.push(a.shift()); return a; };
+  const inOrder = [...d.lv2.easy].sort((a, b) => a[1] - b[1]);
+  const cards = shuffle(inOrder.map(([t], i) => ({ t, i })));
+  const words = shuffle([...d.lv3.keys.lines.map(([, a]) => a), ...d.lv3.keys.extra]);
+  return { cards, words };
+}
+const CHIP = (x) => `<span class="chip">${esc(x)}</span>`;
+function newLv23(d) {
+  const { lv2, lv3 } = d;
+  const P = newBasicPlan(d);
+  const slot = '<span class="slot"></span>';
+  return `
+${LV(2, '정확히 이해하기')}
+${Q('2-A', '지칭', '흐름 지도의 ㉠㉡…이 가리키는 것을 우리말로')}
+${LIST(lv2.refs.map((r, i) => `${REF_MARK[i]} ${esc(r.target)}`), { fill: '58%', nw: true })}
+${Q('2-B', '순서 배열', '모든 문장을 쉬운 말로 섞어 놓았어요. 몇 번째인지 숫자로')}
+<div class="w-box ord">${P.cards.map((c) => `<div><span>${esc(c.t)}</span><b>(　　)</b></div>`).join('')}</div>
+
+${LV(3, '흐름 잡기')}
+${Q('3-A', '핵심어', '보기에서 골라 쓰기 (2개는 남음)')}
+<div class="w-box chips">${P.words.map(CHIP).join('')}</div>
+${LIST(lv3.keys.lines.map(([t]) => esc(t)), { cls: 'en' })}
+${Q('3-B', '내 말로 한 줄', '빈칸만 채우면 요지 완성')}
+<div class="w-frame">${esc(lv3.frame.text).replace(/\(\s*\)/g, slot)}</div>
 `;
 }
 
@@ -218,7 +331,7 @@ ${Q('1-A', '단어', '뜻을 쓰세요.')}
 ${Q('1-B', '내용 O / X', '맞으면 O, 틀리면 X와 근거 문장 번호')}
 ${LIST(lv1.ox.map(([t]) => esc(t)), { mark: 'O · X　(　)', nw: true })}
 
-${LV(2, '정확히 이해하기')}
+${newBasic(d) ? newLv23(d) : `${LV(2, '정확히 이해하기')}
 ${Q('2-A', '지칭', '가리키는 것을 우리말로')}
 ${LIST(lv2.refs.map(([w]) => esc(w)), { fill: '62%' })}
 ${Q('2-B', '쉬운 말 ↔ 원문', '원문 몇 번 문장인지')}
@@ -236,7 +349,7 @@ ${Q('3-B', '문장별 역할', '같은 보기를 여러 번 써도 됨')}
 <div class="w-box c">${esc(lv3.roleChoices)}</div>
 <div class="w-sub">${d.sentences.map((_, i) => `${i + 1}번 (　)`).join('　 ')}</div>
 ${Q('3-C', '연결어 빈칸', '빈칸에 쓰고, 오른쪽에 하는 일')}
-${LIST(lv3.conn.map(([t]) => esc(t)), { fill: '40px', nw: true })}
+${LIST(lv3.conn.map(([t]) => esc(t)), { fill: '40px', nw: true })}`}
 `;
   const exam = () => `
 ${LV(4, '수능형으로 풀기', '지문을 가리고 풀기')}
@@ -247,7 +360,7 @@ ${Q('4-B', '빈칸 추론', '가장 적절한 것은?')}
 ${EN(lv4.blank.sentence)}
 ${OPTS(lv4.blank.options, true)}
 ${ins ? `${Q('4-C', '문장 넣기', '주어진 문장이 들어갈 곳은?')}
-${EN(d.sentences[lv4.insert.given - 1])}
+${EN(lv4.insert.para || d.sentences[lv4.insert.given - 1])}
 <div class="w-box en">${ins.html}</div>` : ''}
 
 ${LV(5, '변형까지 대비하기', '지문을 가리고 풀기')}
@@ -284,14 +397,23 @@ function answerPage(d, has) {
   const AL = (arr) => arr.map((v, i) => `<span>${i + 1}) ${v}</span>`).join('');
   const one = (q, opt = false) => `<span><b>${CIRCLE[q.answer - 1]}${opt ? ` ${esc(q.options[q.answer - 1])}` : ''}</b> ${esc(q.why || '')}</span>`;
   const ins = has('exam') && canInsert(d.sentences.length) && insertPassage(d.sentences, lv4.insert.given);
-  const basic = () => `
+  const P = has('basic') && newBasic(d) && newBasicPlan(d);
+  const basicNew = () => `
+${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
+${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
+${A('2-A', lv2.refs.map((r, i) => `<span>${REF_MARK[i]} ${esc(r.target)} → <b>${esc(r.answer)}</b></span>`).join(''))}
+${A('흐름', (d.fmarks || []).filter((m) => m.kind === 'blank').map((m) => `<span>□ <b>${esc(m.target)}</b> [${esc(m.type)}] ${esc(m.why || '')}</span>`).join(''))}
+${A('2-B', `<span>위에서부터 <b>${P.cards.map((c) => c.i + 1).join(' · ')}</b></span>`)}
+${A('3-A', AL(lv3.keys.lines.map(([, a]) => `<b>${esc(a)}</b>`)))}
+${A('3-B', `<span>예: ${esc(lv3.frame.example || '')}</span>`)}`;
+  const basic = () => (P ? basicNew() : `
 ${A('1-A', AL(lv1.words.map(([, k]) => esc(k))))}
 ${A('1-B', AL(lv1.ox.map(([, a, n]) => `${a} (${n}번)`)))}
 ${A('2-A', AL(lv2.refs.map(([, a]) => esc(a))))}
 ${A('2-B', AL(lv2.easy.map(([, n]) => `${n}번`)))}
 ${A('3-A', `<span>① ${lv3.order.map((k) => `(${esc(k)})`).join(' → ')}</span><span>② ${lv3.steps.map(([, , a]) => esc(a)).join(' / ')}</span>${lv3.ownWords ? `<span>③ 예: ${esc(lv3.ownWords)}</span>` : ''}`)}
 ${A('3-B', AL(lv3.roles.map(esc)))}
-${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`;
+${A('3-C', AL(lv3.conn.map(([, a, w]) => `<b>${esc(a)}</b> ${esc(w)}`)))}`);
   const exam = () => `
 ${A('4-A', one(lv4.title))}
 ${A('4-B', one(lv4.blank, true))}
@@ -327,7 +449,7 @@ function workbookBody(d, parts = BASE_PARTS) {
     has('flow') && flowPage(d),
     (has('basic') || has('exam') || has('wrap')) && problemPages(d, has),
   ].filter(Boolean);
-  // 문장 뜯어보기가 한 쪽을 넘으면 넘친 문장 바로 뒤에 흐름 지도가 이어짐 (빈 쪽 없이) — 넘치는 곳에는 '다음 쪽에 이어집니다' 표시 (CONT_SCRIPT)
+  // 문장 뜯어보기가 한 쪽을 넘으면 넘친 문장 바로 뒤에 흐름 지도가 이어짐 (빈 쪽 없이) — 넘치는 곳에는 'N번부터 다음 쪽 ▶' 표시 (CONT_SCRIPT)
   const frontHtml = front.join('');
   return { front: frontHtml, answers: answerPage(d, has) };
 }
@@ -338,7 +460,7 @@ ${WORKBOOK_CSS}
 </style></head><body>
 ${body}<script>${CONT_SCRIPT}</script></body></html>`;
 
-// 문장 뜯어보기가 첫 쪽을 넘으면, 넘어가는 문장 바로 앞에 '▼ 다음 쪽에 이어집니다' 줄을 넣음
+// 문장 뜯어보기가 첫 쪽을 넘으면, 넘어가는 문장 바로 앞에 'N번부터 다음 쪽 ▶' 줄을 넣음
 //   인쇄 쪽(A4 − 위 6mm · 아래 9mm, 너비 192mm)과 같은 너비로 재서 정함. 다 되면 <html data-ready="1"> (PDF 스크립트 · 앱 인쇄가 기다림)
 const CONT_SCRIPT = `(async () => {
   try { await document.fonts.ready; } catch (e) {}
@@ -347,6 +469,18 @@ const CONT_SCRIPT = `(async () => {
   root.style.width = '192mm';
   const PAGE = 282 * 96 / 25.4, MARK = 22, y = (el) => el.getBoundingClientRect().top + window.scrollY;
   const first = document.querySelector('section');
+  // 덤 동의어: 모두 숨긴 높이를 재고, 하나씩 켜 보아 줄 높이가 커지면 다시 숨김
+  for (const tr of document.querySelectorAll('table.study tbody tr')) {
+    const groups = [];
+    for (const wg of tr.querySelectorAll('.wg')) { const xs = [...wg.querySelectorAll('.x')]; for (let j = 0; j < xs.length; j += 3) groups.push(xs.slice(j, j + 3)); }
+    if (!groups.length) continue;
+    groups.flat().forEach((e) => e.classList.add('off'));
+    const h0 = tr.getBoundingClientRect().height;
+    for (const g of groups) {
+      g.forEach((e) => e.classList.remove('off'));
+      if (tr.getBoundingClientRect().height > h0 + 0.5) g.forEach((e) => e.classList.add('off'));
+    }
+  }
   for (const t of document.querySelectorAll('table.study')) {
     const sec = t.closest('section');
     const top = !sec || sec === first ? 0 : y(sec);
@@ -358,7 +492,7 @@ const CONT_SCRIPT = `(async () => {
     if (i > 0) {
       const tr = document.createElement('tr');
       tr.className = 'cont';
-      tr.innerHTML = '<td colspan="3">▼ 다음 쪽에 이어집니다 (' + (i + 1) + '번 문장부터)</td>';
+      tr.innerHTML = '<td colspan="3">' + (i + 1) + '번부터 다음 쪽 ▶</td>';
       rows[i].before(tr);
     }
   }
@@ -372,20 +506,38 @@ export function workbookHtml(d, { fontCss = '', parts } = {}) {
 }
 
 // 여러 지문 워크북을 한 문서로 (인쇄 한 번 · PDF 하나) — 지문마다 새 쪽, 정답은 맨 뒤에 지문 차례대로 모음
-export function workbooksHtml(list, { fontCss = '', parts, title = '' } = {}) {
+//   frontPages: 지문마다 문제 쪽 수(api/pdf.js가 하나씩 찍어 셈). 주면 지문 · 정답이 늘 홀수 쪽(앞면)에서 시작하게 빈 쪽을 넣음
+//   (선생님 2026-10-27: "지문은 항상 앞 면에 오는 것을 좋아해서" — 양면 인쇄)
+export function workbooksHtml(list, { fontCss = '', parts, title = '', frontPages } = {}) {
   const bodies = list.map((d) => workbookBody(d, parts));
-  const fronts = bodies.map((b, i) => (b.front ? `<section class="${i ? 'answers-start' : ''}">${b.front}</section>` : '')).join('\n');
-  return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${bodies.map((b) => b.answers).join('\n')}`);
+  const blank = '<section class="answers-start blank-page"></section>';
+  let page = 1;
+  const odd = () => (frontPages && page % 2 === 0 ? (page++, blank) : '');
+  const fronts = bodies.map((b, i) => {
+    if (!b.front) return '';
+    const pad = i ? odd() : '';
+    page += frontPages?.[i] || 0;
+    return `${pad}<section class="${i ? 'answers-start' : ''}">${b.front}</section>`;
+  }).join('\n');
+  const answers = bodies.map((b) => b.answers).join('\n');
+  return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${answers ? odd() : ''}${answers}`);
+}
+
+// 문제 쪽만 (정답 없이) — 쪽 수 세기용
+export function frontOnlyHtml(d, { fontCss = '', parts } = {}) {
+  const { front } = workbookBody(d, parts);
+  return doc(d.title, fontCss, front ? `<section>${front}</section>` : '');
 }
 
 export const WORKBOOK_CSS = `
-@page { size: a4; margin: 6mm 9mm 9mm; }
+@page { size: a4; margin: 6mm 9mm 9mm; @bottom-center { content: "씨플러스엠 어학원"; font-family: "Noto Sans KR", sans-serif; font-size: 7pt; font-weight: 500; color: #333333; vertical-align: middle; } }
 body{font-family:"Noto Sans KR", sans-serif;font-size:8.1pt;color:#111111;line-height:1.32}
 table{width:100%;border-collapse:collapse;margin:2px 0px}
 .cols{column-count:2;column-gap:7mm;column-rule:1px solid #dddddd}
 td{border-bottom:1px solid #dddddd;vertical-align:top;padding:1.5px 4px}
 section{break-after:auto}
 .answers-start{break-before:page}
+.blank-page{height:1px}
 .pb{break-after:page}
 .stage{padding-bottom:2px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:10.5pt;border-bottom:1.3px solid #333333;padding:4px 0px 6px;margin:4px 0px 0px}
 .stage span{display:inline-block;margin-right:6px;border:1.3px solid #222222;font-size:7pt;letter-spacing:2px;padding:1px 7px;margin:0px;font-family:"Liberation Mono", "Courier New", monospace}
@@ -455,10 +607,25 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-ans .v{padding:5px 0px;border-bottom:0.5px solid #e4e4e4;line-height:1.6}
 .w-ans .v span{display:inline-block;margin-right:14px}
 .w-ans .v b{font-weight:700}
-.fmap{display:grid;grid-template-columns:62px 1fr;column-gap:10px;margin:7px 0px}
-.fmap .fl b{font-size:7pt;font-weight:700;white-space:nowrap}
+.fm-blank{border:0.9px solid #222222;padding:0px 2px;border-radius:1px}
+.fm-grammar{text-decoration:underline wavy #000000;text-decoration-thickness:1.8px;text-underline-offset:2px;text-decoration-skip-ink:none}
+.fm-write{text-decoration:underline solid #222222;text-decoration-thickness:0.9px;text-underline-offset:2.5px}
+.fm-ref{font-family:"Noto Sans KR", sans-serif;font-size:7pt;margin-right:1px;vertical-align:1px}
+.stage .fm-legend{margin-left:14px;font-style:normal;font-size:7pt;font-weight:400;color:#3a3a3a;letter-spacing:0px}
+.fm-legend u{text-decoration-line:none;margin-right:4px}
+.fm-legend u.fm-grammar,.fm-legend u.fm-write{text-decoration-line:underline}
+.w-box.ord div{display:flex;justify-content:space-between;gap:8px}
+.w-box.ord b{font-weight:400;color:#3a3a3a;white-space:nowrap}
+.w-box.chips{text-align:center;line-height:1.55;padding:3px 6px;font-size:7.3pt}
+.w-box.chips .chip{display:inline-block;white-space:nowrap;margin:0px 6px}
+.w-box.chips b{margin-right:4px;font-size:6.8pt}
+.w-frame{border:0.6px solid #9a9a9a;padding:6px 9px;margin:3px 0px 5px;line-height:2.1;break-inside:avoid}
+.w-frame .slot{display:inline-block;min-width:78px;border-bottom:0.8px solid #444444;margin:0px 3px;height:12px;vertical-align:-2px}
+.flowblock{break-inside:avoid}
+.fmap{display:grid;grid-template-columns:66px 1fr;column-gap:10px;margin:7px 0px}
+.fmap .fl b{font-size:7pt;font-weight:700;word-break:keep-all;overflow-wrap:anywhere;line-height:1.25}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
-.fmap .ft{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:7.8pt;line-height:1.45;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
+.fmap .ft{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:7.8pt;line-height:1.7;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
 .fmap .ft:nth-last-child(1){border-bottom:none}
 .fmap .fl{border-left:2.5px solid;padding:2px 0px 2px 6px;display:flex;flex-direction:column;justify-content:center;line-height:1.25;border-bottom:0.5px solid #e6e6e6}
 .fmap .fl:nth-last-child(2){border-bottom:none}
@@ -483,6 +650,7 @@ table.study td.ko .tr{border-bottom:none !important;margin:0px !important;paddin
 .wg .k{font-size:6.6pt;color:#333333;word-break:keep-all;overflow-wrap:anywhere}
 .wg .hk{align-self:baseline}
 .wg .lb{font-size:6.2pt;font-weight:700}
+.wg .off{display:none}
 .wg .lb.syn,.wg .e.syn{color:#1d6b3a}
 .wg .lb.ant,.wg .e.ant{color:#b02a1e}
 .wg .lb.syn:not(:empty),.wg .lb.ant:not(:empty){padding-top:0px}

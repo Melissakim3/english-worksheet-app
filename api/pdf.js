@@ -3,7 +3,7 @@
 //   아무 HTML이나 받지 않음 (그리는 건 src/workbook/workbook.js). 밖으로 나가는 요청은 Google Fonts만 허용
 import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer-core'
-import { workbookHtml, workbooksHtml } from '../src/workbook/workbook.js'
+import { workbookHtml, workbooksHtml, frontOnlyHtml } from '../src/workbook/workbook.js'
 import { passwordOk } from './ai.js'
 
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com']
@@ -31,11 +31,21 @@ async function browser() {
   return browserP
 }
 
-export function htmlFor(body, css = '') {
+// PDF 쪽 수 (/Type /Page 개수, /Pages는 빼고)
+export const pageCount = (pdf) => (Buffer.from(pdf).toString('latin1').match(/\/Type\s*\/Page(?![a-zA-Z])/g) || []).length
+
+// 여러 지문: 지문마다 문제 쪽을 먼저 따로 찍어 쪽 수를 셈 → 지문 · 정답이 늘 앞면(홀수 쪽)에서 시작하게 빈 쪽을 넣음
+async function frontPagesOf(body, parts, css) {
+  const out = []
+  for (const d of body.list) out.push(pageCount(await renderPdf(frontOnlyHtml(d, { parts, fontCss: css }))))
+  return out
+}
+
+export function htmlFor(body, css = '', frontPages) {
   const parts = Array.isArray(body?.parts) && body.parts.length ? body.parts : undefined
   if (Array.isArray(body?.list)) {
     if (!body.list.length || body.list.length > 40) throw new Error('지문은 1~40개까지')
-    return workbooksHtml(body.list, { parts, title: String(body.title || ''), fontCss: css })
+    return workbooksHtml(body.list, { parts, title: String(body.title || ''), fontCss: css, frontPages })
   }
   if (body?.data) return workbookHtml(body.data, { parts, fontCss: css })
   throw new Error('data 또는 list가 없어요')
@@ -63,15 +73,20 @@ export async function renderPdf(html) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST만 돼요' }); return }
   if (!passwordOk(req)) { res.status(401).json({ error: '비밀번호가 필요해요' }); return }
-  let html
+  let body
+  let css
   try {
-    html = htmlFor(typeof req.body === 'string' ? JSON.parse(req.body) : req.body, await fontCss())
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    css = await fontCss()
+    htmlFor(body, css) // 내용 검사 먼저 (틀리면 400)
   } catch (e) {
     res.status(400).json({ error: e.message })
     return
   }
   try {
-    const pdf = await renderPdf(html)
+    const parts = Array.isArray(body?.parts) && body.parts.length ? body.parts : undefined
+    const frontPages = Array.isArray(body?.list) && body.list.length > 1 ? await frontPagesOf(body, parts, css) : undefined
+    const pdf = await renderPdf(htmlFor(body, css, frontPages))
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Cache-Control', 'no-store')
     res.status(200).send(Buffer.from(pdf))
