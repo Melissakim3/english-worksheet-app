@@ -519,7 +519,8 @@ export function workbooksHtml(list, { fontCss = '', parts, title = '', frontPage
     page += frontPages?.[i] || 0;
     return `${pad}<section class="${i ? 'answers-start' : ''}">${b.front}</section>`;
   }).join('\n');
-  const answers = bodies.map((b) => b.answers).join('\n');
+  // 정답은 맨 뒤에 한꺼번에 — 첫 지문만 새 쪽에서, 다음 지문 정답은 쪽을 넘기지 않고 바로 이어서 (선생님 2026-10-27: "맨 마지막에 한번에 몰아 줘")
+  const answers = bodies.map((b, i) => (i ? b.answers.replace('class="answers-start"', 'class="answers-next"') : b.answers)).join('\n');
   return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${answers ? odd() : ''}${answers}`);
 }
 
@@ -538,6 +539,8 @@ td{border-bottom:1px solid #dddddd;vertical-align:top;padding:1.5px 4px}
 section{break-after:auto}
 .answers-start{break-before:page}
 .blank-page{height:1px}
+.answers-next{margin-top:14px}
+.w-ans .k,.w-ans .v{break-inside:avoid}
 .pb{break-after:page}
 .stage{padding-bottom:2px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:10.5pt;border-bottom:1.3px solid #333333;padding:4px 0px 6px;margin:4px 0px 0px}
 .stage span{display:inline-block;margin-right:6px;border:1.3px solid #222222;font-size:7pt;letter-spacing:2px;padding:1px 7px;margin:0px;font-family:"Liberation Mono", "Courier New", monospace}
