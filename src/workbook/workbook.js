@@ -552,7 +552,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-list .x{flex:1 1 auto;min-width:0px}
 .w-list.nw .x{white-space:nowrap;overflow:hidden;text-overflow:clip}
 .w-list .m{flex:0 0 auto;color:#7a7a7a;font-size:6.6pt;margin-left:6px;white-space:nowrap}
-.w-list.en .x{font-family:"Source Serif 4", serif;font-size:8pt}
+.w-list.en .x{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:8pt}
 .w-list.tall li{padding:7px 0px 1px}
 .w-fill{flex:1 1 auto;border-bottom:0.6px solid #c6c6c6;min-width:24px;align-self:stretch}
 .w-words{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:5px 6px;align-items:end}
@@ -560,7 +560,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-words .w-fill{height:12px;margin-right:6px}
 .w-box{border:0.6px solid #9a9a9a;padding:4px 9px;margin:3px 0px 5px;break-inside:avoid}
 .w-box.c{text-align:center;white-space:nowrap}
-.w-box.en{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.55;text-align:justify}
+.w-box.en{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:7.9pt;line-height:1.55;text-align:justify}
 .w-sub{margin:5px 0px 2px}
 .w-sub .g{color:#5c5c5c;font-size:6.8pt;margin-left:4px}
 .keep{break-after:avoid}
@@ -569,15 +569,15 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-write .w-fill{height:13px}
 .w-write.one{grid-template-columns:1fr}
 .w-write.one .w-fill{height:16px}
-.w-en{font-family:"Source Serif 4", serif;font-size:8.2pt;line-height:1.5;border-left:1.2px solid #111111;padding:1px 0px 1px 8px;margin:3px 0px 4px;break-after:avoid;break-inside:avoid}
-.w-opt{font-family:"Source Serif 4", serif;font-size:8pt;line-height:1.55;margin:0px 0px 2px 2px;break-before:avoid;break-inside:avoid}
+.w-en{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:8.2pt;line-height:1.5;border-left:1.2px solid #111111;padding:1px 0px 1px 8px;margin:3px 0px 4px;break-after:avoid;break-inside:avoid}
+.w-opt{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:8pt;line-height:1.55;margin:0px 0px 2px 2px;break-before:avoid;break-inside:avoid}
 .w-opt span{display:block}
 .w-opt.in span{display:inline-block;margin-right:9px;white-space:nowrap}
 .w-full{border-top:0.8px solid #111111;margin-top:12px;padding-top:1px}
 .w-full .w-list li{padding:2.6px 0px}
 .w-full .w-list.tall li{padding:8px 0px 1px}
 .w-full .w-list.nw .x{white-space:nowrap}
-.w-gp{font-family:"Source Serif 4", serif;font-size:7.9pt;line-height:1.85;text-align:justify;margin:2px 0px 4px}
+.w-gp{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:7.9pt;line-height:1.85;text-align:justify;margin:2px 0px 4px}
 .w-gp .gp{font-weight:600}
 .w-gp .gv{font-weight:600;color:#2a5d8f}
 .w-gp sup{font-family:"Noto Sans KR", sans-serif;font-size:5.4pt;font-weight:400;color:#4d4d4d;margin-left:1px}
@@ -607,7 +607,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .fmap{display:grid;grid-template-columns:66px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;word-break:keep-all;overflow-wrap:anywhere;line-height:1.25}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}
-.fmap .ft{font-family:"Source Serif 4", serif;font-size:7.8pt;line-height:1.7;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
+.fmap .ft{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:7.8pt;line-height:1.7;padding:2.5px 0px;border-bottom:0.5px solid #e6e6e6;text-align:justify}
 .fmap .ft:nth-last-child(1){border-bottom:none}
 .fmap .fl{border-left:2.5px solid;padding:2px 0px 2px 6px;display:flex;flex-direction:column;justify-content:center;line-height:1.25;border-bottom:0.5px solid #e6e6e6}
 .fmap .fl:nth-last-child(2){border-bottom:none}
@@ -620,7 +620,7 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 table.study th:nth-child(1){width:53% !important}
 table.study th:nth-child(2){width:28% !important}
 table.study th:nth-child(3){width:19% !important}
-table.study td.en{font-family:"Source Serif 4", serif;width:auto;padding:5px 12px 4px 6px;color:#111111;line-height:3 !important;font-size:10pt !important}
+table.study td.en{font-family:"Source Serif 4", "Noto Sans KR", serif;width:auto;padding:5px 12px 4px 6px;color:#111111;line-height:3 !important;font-size:10pt !important}
 table.study td.ko{width:auto;color:#3a3a3a;padding-left:5px;padding-right:8px;font-size:6.6pt !important;line-height:1.7 !important}
 table.study td.ko .tr{border-bottom:none !important;margin:0px !important;padding:0px !important}
 .lgin{margin-top:6px;padding-top:5px;border-top:1px dotted #d6d6d6;font-size:6.5pt;line-height:1.6;color:#333333}
@@ -628,7 +628,7 @@ table.study td.ko .tr{border-bottom:none !important;margin:0px !important;paddin
 .wg{display:grid;grid-template-columns:8px 70px 1fr;gap:0px 3px;line-height:1.38;margin-top:5px;align-items:baseline}
 .wg:first-child{margin-top:0px}
 .wg .e{font-size:7pt;color:#111111;overflow-wrap:anywhere}
-.wg b.e{font-family:"Source Serif 4", serif;font-weight:600;font-size:7.4pt;color:#111111}
+.wg b.e{font-family:"Source Serif 4", "Noto Sans KR", serif;font-weight:600;font-size:7.4pt;color:#111111}
 .wg .k{font-size:6.6pt;color:#333333;word-break:keep-all;overflow-wrap:anywhere}
 .wg .hk{align-self:baseline}
 .wg .lb{font-size:6.2pt;font-weight:700}
@@ -646,7 +646,7 @@ ol.easy .x{text-align:right;color:#666666;font-size:6.4pt}
 .tt div{display:grid;grid-template-columns:40px auto 1fr;column-gap:12px;align-items:baseline;padding:2.5px 0px;border-bottom:0.5px solid #ececec}
 .tt div:last-child{border-bottom:none}
 .tt b{font-size:6.6pt;letter-spacing:1px;color:#3a3a3a}
-.tt .en{font-family:"Source Serif 4", serif;font-size:8.6pt;font-weight:600;color:#111111}
+.tt .en{font-family:"Source Serif 4", "Noto Sans KR", serif;font-size:8.6pt;font-weight:600;color:#111111}
 .tt .ko{font-size:7pt;color:#4d4d4d}
 .tt .k1{grid-column:2 / 4;font-size:7.8pt;color:#222222}
 .tt u{text-decoration-thickness:1px;text-underline-offset:3px}
