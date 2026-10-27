@@ -506,10 +506,27 @@ export function workbookHtml(d, { fontCss = '', parts } = {}) {
 }
 
 // 여러 지문 워크북을 한 문서로 (인쇄 한 번 · PDF 하나) — 지문마다 새 쪽, 정답은 맨 뒤에 지문 차례대로 모음
-export function workbooksHtml(list, { fontCss = '', parts, title = '' } = {}) {
+//   frontPages: 지문마다 문제 쪽 수(api/pdf.js가 하나씩 찍어 셈). 주면 지문 · 정답이 늘 홀수 쪽(앞면)에서 시작하게 빈 쪽을 넣음
+//   (선생님 2026-10-27: "지문은 항상 앞 면에 오는 것을 좋아해서" — 양면 인쇄)
+export function workbooksHtml(list, { fontCss = '', parts, title = '', frontPages } = {}) {
   const bodies = list.map((d) => workbookBody(d, parts));
-  const fronts = bodies.map((b, i) => (b.front ? `<section class="${i ? 'answers-start' : ''}">${b.front}</section>` : '')).join('\n');
-  return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${bodies.map((b) => b.answers).join('\n')}`);
+  const blank = '<section class="answers-start blank-page"></section>';
+  let page = 1;
+  const odd = () => (frontPages && page % 2 === 0 ? (page++, blank) : '');
+  const fronts = bodies.map((b, i) => {
+    if (!b.front) return '';
+    const pad = i ? odd() : '';
+    page += frontPages?.[i] || 0;
+    return `${pad}<section class="${i ? 'answers-start' : ''}">${b.front}</section>`;
+  }).join('\n');
+  const answers = bodies.map((b) => b.answers).join('\n');
+  return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${answers ? odd() : ''}${answers}`);
+}
+
+// 문제 쪽만 (정답 없이) — 쪽 수 세기용
+export function frontOnlyHtml(d, { fontCss = '', parts } = {}) {
+  const { front } = workbookBody(d, parts);
+  return doc(d.title, fontCss, front ? `<section>${front}</section>` : '');
 }
 
 export const WORKBOOK_CSS = `
@@ -520,6 +537,7 @@ table{width:100%;border-collapse:collapse;margin:2px 0px}
 td{border-bottom:1px solid #dddddd;vertical-align:top;padding:1.5px 4px}
 section{break-after:auto}
 .answers-start{break-before:page}
+.blank-page{height:1px}
 .pb{break-after:page}
 .stage{padding-bottom:2px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:10.5pt;border-bottom:1.3px solid #333333;padding:4px 0px 6px;margin:4px 0px 0px}
 .stage span{display:inline-block;margin-right:6px;border:1.3px solid #222222;font-size:7pt;letter-spacing:2px;padding:1px 7px;margin:0px;font-family:"Liberation Mono", "Courier New", monospace}
