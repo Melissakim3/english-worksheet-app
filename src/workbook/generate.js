@@ -117,7 +117,14 @@ async function generateBase({ sentences, title, level, modelId, parts, rnd, usag
 }
 
 // parts: 고른 구성 (PARTS의 id) — 고른 칸만 AI가 씀
-export async function generateWorkbook({ passage, title, level, modelId, parts = BASE_PARTS, onStep = () => {} }) {
+// 교과서 소제목: 첫 문장 앞부분(at)으로 문장 번호를 찾음 — 지문을 고쳐서 못 찾으면 그 소제목은 뺌 (AI는 안 씀)
+const norm = (t) => String(t || '').replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim().toLowerCase()
+export function placeHeads(sentences, heads = []) {
+  return (heads || []).map((h) => ({ ...h, s: sentences.findIndex((x) => norm(x).startsWith(norm(h.at).slice(0, 40))) + 1 }))
+    .filter((h) => h.s > 0).map(({ at, ...h }) => h)
+}
+
+export async function generateWorkbook({ passage, title, level, modelId, parts = BASE_PARTS, heads = [], onStep = () => {} }) {
   const sentences = splitSentences(passage)
   if (!parts.length) throw new Error('워크북 구성을 하나 이상 골라 주세요.')
   if (sentences.length < 5) throw new Error(`문장이 ${sentences.length}개뿐이에요. 워크북은 5문장 이상 지문에 맞춰져 있어요.`)
@@ -133,5 +140,7 @@ export async function generateWorkbook({ passage, title, level, modelId, parts =
     throw e
   }
   const { data, attempts } = got
+  const hs = placeHeads(sentences, heads)
+  if (hs.length) data.heads = hs
   return { data, parts, usage, cost: costWon(modelId, usage), attempts }
 }

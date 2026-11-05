@@ -12,7 +12,12 @@ export function decodeIncoming(hash) {
     if (!passages.length) return null
     // names: 지문마다 이름(예: '29번') — 있으면 여러 지문 워크북 제목에 씀
     const names = Array.isArray(data.names) && data.names.length === passages.length ? data.names.map((n) => String(n || '').slice(0, 100)) : []
-    return { title: String(data.title || '').slice(0, 200), passages, names }
+    // heads: 지문마다 교과서 소제목 [{ at: 그 부분 첫 문장 앞부분, no, en, ko }] — 워크북 STAGE 1 · 흐름 지도에 (cm-variant '워크북 묶음', 선생님 2026-11-05)
+    const clip = (v, n) => String(v || '').slice(0, n)
+    const heads = Array.isArray(data.heads) && data.heads.length === passages.length
+      ? data.heads.map((hs) => (Array.isArray(hs) ? hs : []).filter((h) => h && h.at && h.en).map((h) => ({ at: clip(h.at, 80), no: clip(h.no, 6), en: clip(h.en, 100), ko: clip(h.ko, 100) })))
+      : passages.map(() => [])
+    return { title: String(data.title || '').slice(0, 200), passages, names, heads }
   } catch {
     return null
   }
