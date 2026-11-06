@@ -72,6 +72,7 @@ export function checkWorkbook(d, parts = BASE_PARTS) {
   };
   if (!d?.title) errs.push('title: 지문 이름 없음');
   if (!n) errs.push('sentences: 영어 문장 없음');
+  (d?.heads || []).forEach((h, i) => { inRange(h?.s, `heads ${i + 1}`); if (!h?.en) errs.push(`heads ${i + 1}: 영어 소제목(en) 없음`); });
   if (has('study')) {
     if (d?.study?.length !== n) errs.push(`study: 문장 ${n}개마다 하나씩 (지금 ${d?.study?.length ?? 0}개)`);
     (d?.study || []).forEach((s, i) => {
@@ -253,12 +254,18 @@ const wordRows = (k, list) => list.map(([en, ko], j) => { const x = k === 'syn' 
 const wordBlock = (w) => `<div class="wg"><span class="lb"></span><b class="e">${esc(w.en)}</b><span class="k hk">${esc(w.ko)}</span>${wordRows('syn', w.syn || [])}${wordRows('ant', w.ant || [])}</div>`;
 const range = (s) => (s.length > 1 ? `${s[0]}~${s[s.length - 1]}` : `${s[0]}`);
 
+// 교과서 소제목 (선생님 2026-11-05: EXAM4YOU 해석지처럼 'A Complex Nervous System' 같은 제목을 그 부분 첫 문장 위에)
+//   d.heads = [{ s: 시작 문장 번호, no: '2'(교과서 부분 번호, 없어도 됨), en: 영어 소제목, ko: 한글 소제목 }] — 노션 지문 줄 이름 · 영어 본문 첫 줄에서 그대로 (지어내지 않음, 모의고사는 없음)
+const headOf = (d, k) => (d.heads || []).find((h) => h.s === k);
+const headRow = (d, k) => { const h = headOf(d, k); return h ? `<tr class="hd"><td class="en">${h.no ? `<span class="hno">${esc(h.no)}</span>` : ''}<b>${esc(h.en)}</b></td><td class="ko" colspan="2"><b>${esc(h.ko || '')}</b></td></tr>` : ''; };
+const headLine = (d, k) => { const h = headOf(d, k); return h ? `<div class="fhd">${h.no ? `<span class="hno">${esc(h.no)}</span>` : ''}<b>${esc(h.en)}</b>${h.ko ? `<i>${esc(h.ko)}</i>` : ''}</div>` : ''; };
+
 function studyPage(d) {
   const T = esc(d.title);
   return `
 <div class="stage first"><span>STAGE 1</span>문장 뜯어보기<em class="pname">${T}</em></div>
 <table class="study"><thead><tr><th>영어 원문</th><th>한글 해석 · 논리 · 문법</th><th>단어 · 동의어 · 반의어</th></tr></thead><tbody>
-${d.sentences.map((s, i) => { const t = d.study[i]; return `<tr><td class="en"><span class="n">${i + 1}</span>${esc(s)}</td><td class="ko"><div class="tr">${esc(t.ko)}</div><div class="lgin"><div><span class="tag">${esc(t.tag)}</span>${esc(t.logic)}</div><div><span class="tag g">어법</span>${esc(t.grammar)}</div></div></td><td class="wd">${(t.words || []).map(wordBlock).join('')}</td></tr>`; }).join('\n')}
+${d.sentences.map((s, i) => { const t = d.study[i]; return `${headRow(d, i + 1)}<tr data-n="${i + 1}"><td class="en"><span class="n">${i + 1}</span>${esc(s)}</td><td class="ko"><div class="tr">${esc(t.ko)}</div><div class="lgin"><div><span class="tag">${esc(t.tag)}</span>${esc(t.logic)}</div><div><span class="tag g">어법</span>${esc(t.grammar)}</div></div></td><td class="wd">${(t.words || []).map(wordBlock).join('')}</td></tr>`; }).join('\n')}
 </tbody></table>`;
 }
 
@@ -284,7 +291,7 @@ function flowPage(d) {
   // 흐름 지도는 통째로: 남은 자리에 다 들어가면 바로 이어 붙이고, 안 들어가면 남은 자리는 비우고 다음 쪽에서 시작
   return `
 <div class="flowblock"><div class="stage first"><span>STAGE 2</span>흐름 지도${legend}<em class="pname">${T}</em></div>
-<div class="fmap">${d.flow.map((f, i) => `<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map(marked1).join(' ')}</div>`).join('')}</div>
+<div class="fmap">${d.flow.map((f, i) => `${headLine(d, f.s[0])}<div class="fl" style="border-left-color:${FLOW_COLORS[i % FLOW_COLORS.length]}"><b>${esc(f.label)}</b><i>${range(f.s)}번</i></div><div class="ft">${f.s.map(marked1).join(' ')}</div>`).join('')}</div>
 <div class="core"><div><b>주제</b><span>${esc(d.core.topic)}</span></div><div><b>요지</b><span>${esc(d.core.gist)}</span></div><div><b>핵심 대조</b><span>${marked(d.core.contrast)}</span></div></div></div>
 `;
 }
@@ -489,10 +496,12 @@ const CONT_SCRIPT = `(async () => {
     // 정말 넘치는 첫 문장(i) 앞에 표시. 표시 줄이 들어갈 자리가 없으면 한 문장 앞으로
     let i = rows.findIndex((r) => bottom(r) > PAGE);
     if (i > 1 && bottom(rows[i - 1]) > PAGE - MARK) i -= 1;
+    if (i > 0 && rows[i - 1].classList.contains('hd')) i -= 1; // 소제목은 첫 문장과 같은 쪽에
     if (i > 0) {
       const tr = document.createElement('tr');
       tr.className = 'cont';
-      tr.innerHTML = '<td colspan="3">' + (i + 1) + '번부터 다음 쪽 ▶</td>';
+      const at = rows.slice(i).find((r) => r.dataset.n);
+      tr.innerHTML = '<td colspan="3">' + (at ? at.dataset.n : i + 1) + '번부터 다음 쪽 ▶</td>';
       rows[i].before(tr);
     }
   }
@@ -519,7 +528,7 @@ export function workbooksHtml(list, { fontCss = '', parts, title = '', frontPage
     page += frontPages?.[i] || 0;
     return `${pad}<section class="${i ? 'answers-start' : ''}">${b.front}</section>`;
   }).join('\n');
-  const answers = bodies.map((b) => b.answers).join('\n');
+  const answers = list.some((d) => d._noAnswers) ? '' : bodies.map((b) => b.answers).join('\n'); // 학생용(정답 없이)
   return doc(title || list[0]?.title || '워크북', fontCss, `${fronts}${answers ? odd() : ''}${answers}`);
 }
 
@@ -622,6 +631,13 @@ table.study td{vertical-align:top;border-bottom:1px dotted #d6d6d6;padding:8px 5
 .w-frame{border:0.6px solid #9a9a9a;padding:6px 9px;margin:3px 0px 5px;line-height:2.1;break-inside:avoid}
 .w-frame .slot{display:inline-block;min-width:78px;border-bottom:0.8px solid #444444;margin:0px 3px;height:12px;vertical-align:-2px}
 .flowblock{break-inside:avoid}
+table.study tr.hd td{border-bottom:none;padding:12px 6px 0px !important;line-height:1.4 !important}
+table.study tr.hd td.en b{font-family:"Noto Sans KR", sans-serif;font-size:10pt;font-weight:700;color:#111111}
+table.study tr.hd td.ko b{font-size:8pt;font-weight:700;color:#222222}
+.hno{display:inline-block;min-width:16px;padding:1px 4px;margin-right:7px;border-radius:3px;background:#dcebd9;color:#3d7a45;font-family:"Noto Sans KR", sans-serif;font-size:7.5pt;font-weight:700;text-align:center;vertical-align:1px}
+.fmap .fhd{grid-column:1 / -1;padding:6px 0px 2px;border-bottom:0.5px solid #e6e6e6}
+.fmap .fhd b{font-size:8pt;font-weight:700;color:#111111}
+.fmap .fhd i{font-style:normal;font-size:7pt;color:#555555;margin-left:8px}
 .fmap{display:grid;grid-template-columns:66px 1fr;column-gap:10px;margin:7px 0px}
 .fmap .fl b{font-size:7pt;font-weight:700;word-break:keep-all;overflow-wrap:anywhere;line-height:1.25}
 .fmap .fl i{font-style:normal;font-size:6pt;color:#666666}

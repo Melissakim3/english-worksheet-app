@@ -36,7 +36,7 @@ function download(blob, name) {
 }
 
 // 지문 완전정복 워크북 — 고른 구성만 AI로 받고, 선생님이 고른 모양 그대로 미리보기 · 인쇄
-//   passages: [{ passage, title }] — 하나면 단일 지문, 여럿이면 지문마다 차례로 만들어 한 문서(PDF 하나)로
+//   passages: [{ passage, title, heads? }] (heads = 교과서 소제목, cm-variant에서 받음) — 하나면 단일 지문, 여럿이면 지문마다 차례로 만들어 한 문서(PDF 하나)로
 //   (여러 지문: 지문마다 새 쪽, 정답은 맨 뒤에 모음 · 한 지문이 실패해도 나머지는 계속 만들고 실패한 지문을 알려 줌)
 export default function WorkbookPanel({ passages, title, level, modelId, modelLabel }) {
   const [parts, setParts] = useState(loadParts)
@@ -66,10 +66,10 @@ export default function WorkbookPanel({ passages, title, level, modelId, modelLa
     let cost = 0
     let retried = 0
     for (let i = 0; i < list.length; i++) {
-      const { passage, title: t } = list[i]
+      const { passage, title: t, heads } = list[i]
       const head = many ? `${i + 1}/${list.length} ${t} · ` : ''
       try {
-        const r = await generateWorkbook({ passage, title: t, level, modelId, parts, onStep: (s) => setStep(`${head}${s || '만드는 중…'}`) })
+        const r = await generateWorkbook({ passage, title: t, level, modelId, parts, heads, onStep: (s) => setStep(`${head}${s || '만드는 중…'}`) })
         done.push(r.data)
         usage.input += r.usage.input
         usage.output += r.usage.output

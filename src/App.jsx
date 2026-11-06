@@ -58,6 +58,7 @@ export default function App() {
   const [difficulty, setDifficulty] = useState('중')
   const [multiPassages, setMultiPassages] = useState([])   // 다중 지문 목록
   const [multiMode, setMultiMode] = useState(false)        // 다중 지문 모드
+  const [multiHeads, setMultiHeads] = useState([])         // 교과서 소제목 (cm-variant '워크북 묶음')
   const [multiNames, setMultiNames] = useState([])         // 지문 이름 (cm-variant에서 받으면 '29번' 등)
   const [multiResults, setMultiResults] = useState([])     // 각 지문 결과
   const [currentPassageIdx, setCurrentPassageIdx] = useState(0)
@@ -76,11 +77,13 @@ export default function App() {
     if (got.passages.length === 1) {
       setMultiMode(false)
       setPassage(got.passages[0])
+      setMultiHeads(got.heads)
     } else {
       setMultiMode(true)
       setPassage(got.passages.join('\n\n---\n\n'))
       setMultiPassages(got.passages)
       setMultiNames(got.names)
+      setMultiHeads(got.heads)
       setMultiResults([])
     }
   }, [])
@@ -198,6 +201,7 @@ export default function App() {
         setError('지문을 찾을 수 없어요. 텍스트로 직접 붙여넣어 주세요.')
       } else {
         setMultiPassages(passages)
+        setMultiHeads([])
         setMultiNames([])
         setMultiMode(true)
         setMultiResults([])
@@ -218,6 +222,7 @@ export default function App() {
       return
     }
     setMultiPassages(passages)
+    setMultiHeads([])
     setMultiNames([])
     setMultiMode(true)
     setMultiResults([])
@@ -414,8 +419,8 @@ export default function App() {
         {(!multiMode || multiPassages.length > 0) && (
           <WorkbookPanel
             passages={multiMode
-              ? multiPassages.map((p, i) => ({ passage: p, title: multiNames[i] || `${title || '지문'} · ${i + 1}` }))
-              : [{ passage, title }]}
+              ? multiPassages.map((p, i) => ({ passage: p, title: multiNames[i] || `${title || '지문'} · ${i + 1}`, heads: multiHeads[i] || [] }))
+              : [{ passage, title, heads: multiHeads[0] || [] }]}
             title={title} level={level} modelId={modelId} modelLabel={currentModel.label} />
         )}
 
