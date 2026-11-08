@@ -44,7 +44,9 @@ async function openai({ system, user, model, maxTokens }) {
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    return res.status(200).json({ anthropic: Boolean(key('ANTHROPIC_API_KEY')), openai: Boolean(key('OPENAI_API_KEY')), needsPassword: Boolean(String(process.env.APP_PASSWORD || '').trim()) })
+    // 화면 잠금 확인 (public/gate.js, 2026-11-08 선생님: "cm-worksheet도 잠가줘") — 비밀번호가 틀리면 401
+    if (String(req.query?.check || '') === '1' && !passwordOk(req)) return res.status(401).json({ ok: false, error: '비밀번호가 필요해요' })
+    return res.status(200).json({ ok: true, anthropic: Boolean(key('ANTHROPIC_API_KEY')), openai: Boolean(key('OPENAI_API_KEY')), needsPassword: Boolean(String(process.env.APP_PASSWORD || '').trim()) })
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST만 돼요' })
   if (!passwordOk(req)) return res.status(401).json({ error: '비밀번호가 필요해요', code: 'unauthorized' })
